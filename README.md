@@ -65,7 +65,7 @@ coding-agents-skills/
 ---
 
 ### 2. LangChain
-**Status:** 🚧 In Development
+**Status:** ✅ Complete
 
 **Description:** Build AI applications with LangChain framework.
 
