@@ -23,6 +23,7 @@ pip install 'smolagents[telemetry]'       # OpenTelemetry support
 ### Agent Types
 
 **CodeAgent** - Primary agent that writes Python code to execute actions:
+
 ```python
 from smolagents import CodeAgent, InferenceClientModel
 
@@ -32,6 +33,7 @@ result = agent.run("Calculate the first 20 Fibonacci numbers")
 ```
 
 **ToolCallingAgent** - Uses JSON-based tool calls (no code execution):
+
 ```python
 from smolagents import ToolCallingAgent, InferenceClientModel
 
@@ -42,6 +44,7 @@ agent.run("Get the title of https://huggingface.co/blog")
 ### Model Configuration
 
 **Hugging Face Inference API** (recommended for quick start):
+
 ```python
 from smolagents import InferenceClientModel
 
@@ -57,6 +60,7 @@ model = InferenceClientModel(
 ```
 
 **LiteLLM** (100+ providers):
+
 ```python
 from smolagents import LiteLLMModel
 
@@ -71,6 +75,7 @@ model = LiteLLMModel(model_id="gpt-4o", api_key="YOUR_OPENAI_API_KEY")
 ```
 
 **Local Transformers**:
+
 ```python
 from smolagents import TransformersModel
 
@@ -82,6 +87,7 @@ model = TransformersModel(
 ```
 
 **Ollama** (local):
+
 ```python
 from smolagents import LiteLLMModel
 
@@ -93,6 +99,7 @@ model = LiteLLMModel(
 ```
 
 **OpenAI-compatible endpoints**:
+
 ```python
 from smolagents import OpenAIModel
 
@@ -120,6 +127,7 @@ agent = CodeAgent(
 ### Creating Custom Tools
 
 **Using @tool decorator** (simplest):
+
 ```python
 from smolagents import tool
 
@@ -127,7 +135,7 @@ from smolagents import tool
 def get_weather(city: str) -> str:
     """
     Gets current weather for a city.
-    
+
     Args:
         city: Name of the city to get weather for.
     """
@@ -136,6 +144,7 @@ def get_weather(city: str) -> str:
 ```
 
 **Using Tool class** (more control):
+
 ```python
 from smolagents import Tool
 
@@ -366,6 +375,7 @@ manager = CodeAgent(
 ### Local Python Executor (Default)
 
 Built-in security:
+
 - Restricted imports (must be explicitly authorized)
 - Operation count limits (prevents infinite loops)
 - AST-based execution (no raw eval)
@@ -431,7 +441,7 @@ engine = create_engine("sqlite:///database.db")
 def sql_engine(query: str) -> str:
     """
     Execute SQL queries on the database.
-    
+
     Args:
         query: SQL query to execute.
     """
@@ -456,7 +466,7 @@ from smolagents import tool, CodeAgent, InferenceClientModel
 def retriever_tool(query: str) -> str:
     """
     Retrieves relevant documents from the knowledge base.
-    
+
     Args:
         query: Search query for the knowledge base.
     """
@@ -479,7 +489,7 @@ agent.run("What does our documentation say about authentication?")
 from smolagents import CodeAgent, InferenceClientModel, tool
 import helium
 
-@tool  
+@tool
 def go_back() -> str:
     """Go back to the previous page."""
     helium.go_back()
@@ -489,7 +499,7 @@ def go_back() -> str:
 def search_item_ctrl_f(text: str) -> str:
     """
     Search for text on the current page.
-    
+
     Args:
         text: Text to search for.
     """

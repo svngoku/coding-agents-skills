@@ -3,6 +3,7 @@
 Collaborative workshop technique for exploring complex business domains.
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Sticky Note Legend](#sticky-note-legend)
 3. [Workshop Phases](#workshop-phases)
@@ -26,46 +27,51 @@ Event Storming explores business domains by focusing on **what happens** (events
 
 ## Sticky Note Legend
 
-| Color | Element | Description | Example |
-|-------|---------|-------------|---------|
-| 🟧 Orange | **Domain Event** | Something that happened (past tense) | "Order Placed" |
-| 🟦 Blue | **Command** | Action that triggers event | "Place Order" |
-| 🟨 Yellow | **Actor/User** | Person or system that issues command | "Customer" |
-| 🟪 Purple | **Policy** | Reactive logic ("When X, then Y") | "When Order Placed, Reserve Inventory" |
-| 🟩 Green | **Read Model** | Information needed to make decision | "Available Inventory" |
-| 🟥 Red/Pink | **Hotspot** | Problem, question, or conflict | "What if payment fails?" |
-| 🟫 Tan/Beige | **Aggregate** | Cluster of related events/commands | "Order" |
-| ⬜ White | **External System** | System outside bounded context | "Payment Gateway" |
+| Color        | Element             | Description                          | Example                                |
+| ------------ | ------------------- | ------------------------------------ | -------------------------------------- |
+| 🟧 Orange    | **Domain Event**    | Something that happened (past tense) | "Order Placed"                         |
+| 🟦 Blue      | **Command**         | Action that triggers event           | "Place Order"                          |
+| 🟨 Yellow    | **Actor/User**      | Person or system that issues command | "Customer"                             |
+| 🟪 Purple    | **Policy**          | Reactive logic ("When X, then Y")    | "When Order Placed, Reserve Inventory" |
+| 🟩 Green     | **Read Model**      | Information needed to make decision  | "Available Inventory"                  |
+| 🟥 Red/Pink  | **Hotspot**         | Problem, question, or conflict       | "What if payment fails?"               |
+| 🟫 Tan/Beige | **Aggregate**       | Cluster of related events/commands   | "Order"                                |
+| ⬜ White     | **External System** | System outside bounded context       | "Payment Gateway"                      |
 
 ---
 
 ## Workshop Phases
 
 ### Phase 1: Chaotic Exploration (30-60 min)
+
 1. Everyone writes domain events on orange stickies
 2. Place on wall in rough time order (left to right)
 3. No discussion yet - just capture everything
 4. Duplicates are fine
 
 ### Phase 2: Enforce Timeline (30 min)
+
 1. Arrange events in chronological order
 2. Identify parallel flows (stack vertically)
 3. Mark pivotal events (key moments)
 4. Add hotspots for questions/conflicts
 
 ### Phase 3: Add Commands & Actors (30-45 min)
+
 1. For each event, ask "What caused this?"
 2. Add blue command sticky before event
 3. Add yellow actor sticky to command
 4. Connect with arrows
 
 ### Phase 4: Identify Aggregates (30 min)
+
 1. Group related events/commands
 2. Name the aggregate (tan sticky)
 3. Draw boundaries
 4. Note aggregate relationships
 
 ### Phase 5: Identify Bounded Contexts (30 min)
+
 1. Look for language boundaries
 2. Group aggregates into contexts
 3. Name contexts
@@ -161,15 +167,15 @@ Translate Event Storming to DDD building blocks.
 
 ### Mapping to Code
 
-| Event Storming | DDD Building Block |
-|----------------|-------------------|
-| 🟫 Aggregate | Aggregate Root |
-| 🟧 Domain Event | Domain Event class |
-| 🟦 Command | Command object |
-| 🟪 Policy | Domain Service or Event Handler |
-| 🟩 Read Model | Query/View Model |
-| ⬜ External System | Anti-Corruption Layer |
-| Swimlane boundary | Bounded Context |
+| Event Storming     | DDD Building Block              |
+| ------------------ | ------------------------------- |
+| 🟫 Aggregate       | Aggregate Root                  |
+| 🟧 Domain Event    | Domain Event class              |
+| 🟦 Command         | Command object                  |
+| 🟪 Policy          | Domain Service or Event Handler |
+| 🟩 Read Model      | Query/View Model                |
+| ⬜ External System | Anti-Corruption Layer           |
+| Swimlane boundary  | Bounded Context                 |
 
 ### From Stickies to Code
 
@@ -214,6 +220,7 @@ class InventoryPolicy:  # 🟪
 ## Facilitation Tips
 
 ### Before Workshop
+
 - [ ] Book large room with empty wall space
 - [ ] Prepare sticky notes (all colors)
 - [ ] Invite domain experts AND developers
@@ -221,6 +228,7 @@ class InventoryPolicy:  # 🟪
 - [ ] Prepare domain question list
 
 ### During Workshop
+
 - Keep energy high, discourage sitting
 - Encourage everyone to write stickies
 - Domain experts write in business language
@@ -230,13 +238,13 @@ class InventoryPolicy:  # 🟪
 
 ### Common Problems
 
-| Problem | Solution |
-|---------|----------|
-| One person dominates | Hand them the marker, make them facilitate |
-| Too much detail early | "We'll come back to that" - add hotspot |
-| Analysis paralysis | Time-box each phase |
-| Arguments over terminology | Perfect! You found a context boundary |
-| "It depends" answers | Great - capture both paths |
+| Problem                    | Solution                                   |
+| -------------------------- | ------------------------------------------ |
+| One person dominates       | Hand them the marker, make them facilitate |
+| Too much detail early      | "We'll come back to that" - add hotspot    |
+| Analysis paralysis         | Time-box each phase                        |
+| Arguments over terminology | Perfect! You found a context boundary      |
+| "It depends" answers       | Great - capture both paths                 |
 
 ---
 
@@ -248,15 +256,17 @@ class InventoryPolicy:  # 🟪
 ## Events in [Context Name]
 
 ### OrderPlaced
+
 - **Trigger**: Customer completes checkout
 - **Data**: order_id, customer_id, items[], total, placed_at
-- **Policies triggered**: 
+- **Policies triggered**:
   - Reserve Inventory
   - Send Confirmation Email
   - Start Payment Processing
 - **Aggregate**: Order
 
 ### OrderShipped
+
 - **Trigger**: Warehouse marks order as shipped
 - **Data**: order_id, tracking_number, carrier, shipped_at
 - **Policies triggered**:
@@ -271,18 +281,21 @@ class InventoryPolicy:  # 🟪
 ## Order Aggregate
 
 ### Commands
-| Command | Actor | Preconditions | Events |
-|---------|-------|---------------|--------|
-| Place Order | Customer | Cart not empty, valid payment | Order Placed |
-| Cancel Order | Customer | Status = Pending | Order Cancelled |
-| Ship Order | Warehouse | Status = Paid | Order Shipped |
+
+| Command      | Actor     | Preconditions                 | Events          |
+| ------------ | --------- | ----------------------------- | --------------- |
+| Place Order  | Customer  | Cart not empty, valid payment | Order Placed    |
+| Cancel Order | Customer  | Status = Pending              | Order Cancelled |
+| Ship Order   | Warehouse | Status = Paid                 | Order Shipped   |
 
 ### Invariants
+
 - Order must have at least one line item
 - Total must match sum of line items
 - Cannot modify after shipping
 
 ### Events Emitted
+
 - OrderPlaced
 - OrderCancelled
 - OrderShipped
@@ -295,22 +308,26 @@ class InventoryPolicy:  # 🟪
 ## Context: Order Management
 
 ### Upstream Dependencies
+
 - **Identity Context** (OHS/PL): User authentication
 - **Catalog Context** (Customer/Supplier): Product information
 
-### Downstream Consumers  
+### Downstream Consumers
+
 - **Shipping Context** (Customer/Supplier): Fulfillment
 - **Analytics Context** (Conformist): Reporting
 
 ### External Systems
+
 - **Payment Gateway** (ACL): Stripe integration
 - **Tax Service** (ACL): Avalara integration
 
 ### Ubiquitous Language
-| Term | Definition |
-|------|------------|
-| Order | Customer's intent to purchase items |
-| Line Item | Single product entry in order |
+
+| Term        | Definition                            |
+| ----------- | ------------------------------------- |
+| Order       | Customer's intent to purchase items   |
+| Line Item   | Single product entry in order         |
 | Fulfillment | Process of shipping order to customer |
 ```
 

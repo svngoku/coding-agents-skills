@@ -17,7 +17,7 @@ support_agent = create_agent(
 )
 
 billing_agent = create_agent(
-    model="claude-sonnet-4-5-20250929", 
+    model="claude-sonnet-4-5-20250929",
     tools=[check_billing, process_refund],
     system_prompt="You handle billing issues."
 )
@@ -98,7 +98,7 @@ sql_skill = Skill(
 )
 
 api_skill = Skill(
-    name="api", 
+    name="api",
     tools=[make_request, parse_response],
     description="Call external APIs"
 )

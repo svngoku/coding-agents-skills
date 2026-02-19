@@ -3,6 +3,7 @@
 Strategic design focuses on the big picture: how to decompose a large system into bounded contexts and manage their relationships.
 
 ## Table of Contents
+
 1. [Subdomains](#subdomains)
 2. [Bounded Contexts](#bounded-contexts)
 3. [Context Mapping](#context-mapping)
@@ -15,13 +16,14 @@ Strategic design focuses on the big picture: how to decompose a large system int
 
 Subdomains represent areas of the business. Classify by business value:
 
-| Type | Description | Investment | Example |
-|------|-------------|------------|---------|
-| **Core** | Competitive advantage, unique to business | High - custom build, best talent | Pricing algorithm, recommendation engine |
-| **Supporting** | Necessary but not differentiating | Medium - can outsource some | Customer onboarding, reporting |
-| **Generic** | Common across industries | Low - buy/use OSS | Authentication, email sending, payments |
+| Type           | Description                               | Investment                       | Example                                  |
+| -------------- | ----------------------------------------- | -------------------------------- | ---------------------------------------- |
+| **Core**       | Competitive advantage, unique to business | High - custom build, best talent | Pricing algorithm, recommendation engine |
+| **Supporting** | Necessary but not differentiating         | Medium - can outsource some      | Customer onboarding, reporting           |
+| **Generic**    | Common across industries                  | Low - buy/use OSS                | Authentication, email sending, payments  |
 
 **Discovery questions:**
+
 - What makes this business unique?
 - What would competitors copy if they could?
 - What could we buy off-the-shelf?
@@ -42,6 +44,7 @@ A bounded context is a linguistic and model boundary where a domain model applie
 ### Identifying Boundaries
 
 Look for:
+
 - **Language shifts**: Same term means different things
 - **Model conflicts**: Incompatible representations
 - **Team boundaries**: Different groups own different areas
@@ -71,16 +74,16 @@ Context maps document relationships between bounded contexts.
 
 ### Relationship Patterns
 
-| Pattern | Description | When to Use |
-|---------|-------------|-------------|
-| **Shared Kernel** | Shared subset of model between contexts | Tight collaboration, same team |
-| **Customer-Supplier** | Upstream provides, downstream consumes | Clear dependency direction |
-| **Conformist** | Downstream adopts upstream model as-is | No influence over upstream |
-| **Anti-Corruption Layer (ACL)** | Translation layer to protect domain | Integrating with legacy/external |
-| **Open Host Service (OHS)** | Published API for multiple consumers | Platform/service provider |
-| **Published Language** | Shared schema (XML, JSON, Protobuf) | Industry standards, APIs |
-| **Separate Ways** | No integration, duplicate if needed | Independence more valuable |
-| **Partnership** | Two contexts evolve together | Mutual dependency, same goals |
+| Pattern                         | Description                             | When to Use                      |
+| ------------------------------- | --------------------------------------- | -------------------------------- |
+| **Shared Kernel**               | Shared subset of model between contexts | Tight collaboration, same team   |
+| **Customer-Supplier**           | Upstream provides, downstream consumes  | Clear dependency direction       |
+| **Conformist**                  | Downstream adopts upstream model as-is  | No influence over upstream       |
+| **Anti-Corruption Layer (ACL)** | Translation layer to protect domain     | Integrating with legacy/external |
+| **Open Host Service (OHS)**     | Published API for multiple consumers    | Platform/service provider        |
+| **Published Language**          | Shared schema (XML, JSON, Protobuf)     | Industry standards, APIs         |
+| **Separate Ways**               | No integration, duplicate if needed     | Independence more valuable       |
+| **Partnership**                 | Two contexts evolve together            | Mutual dependency, same goals    |
 
 ### Context Map Notation
 
@@ -144,14 +147,14 @@ A shared vocabulary between developers and domain experts within a bounded conte
 ```markdown
 ## Orders Context - Ubiquitous Language
 
-| Term | Definition | Examples |
-|------|------------|----------|
-| Order | A customer's request to purchase items | Order #12345 |
-| Order Line | Single item entry within an order | "2x Blue Widget" |
-| Fulfillment | Process of preparing order for delivery | Picking, packing |
-| Backorder | Order for out-of-stock item | Will ship when available |
-| Cancel | Customer-initiated order termination | Refund issued |
-| Void | System-initiated order termination | Payment failed |
+| Term        | Definition                              | Examples                 |
+| ----------- | --------------------------------------- | ------------------------ |
+| Order       | A customer's request to purchase items  | Order #12345             |
+| Order Line  | Single item entry within an order       | "2x Blue Widget"         |
+| Fulfillment | Process of preparing order for delivery | Picking, packing         |
+| Backorder   | Order for out-of-stock item             | Will ship when available |
+| Cancel      | Customer-initiated order termination    | Refund issued            |
+| Void        | System-initiated order termination      | Payment failed           |
 ```
 
 ### Code Alignment

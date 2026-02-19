@@ -15,11 +15,11 @@ Fine-tune LLMs and VLMs using [Unsloth](https://github.com/unslothai/unsloth) on
 
 ## Available Scripts
 
-| Script | Base Model | Task |
-|--------|------------|------|
-| `scripts/sft-qwen3-vl.py` | Qwen3-VL-8B | VLM fine-tuning |
-| `scripts/sft-gemma3-vlm.py` | Gemma 3 4B | VLM fine-tuning (smaller) |
-| `scripts/continued-pretraining.py` | Qwen3-0.6B | Domain adaptation |
+| Script                             | Base Model  | Task                      |
+| ---------------------------------- | ----------- | ------------------------- |
+| `scripts/sft-qwen3-vl.py`          | Qwen3-VL-8B | VLM fine-tuning           |
+| `scripts/sft-gemma3-vlm.py`        | Gemma 3 4B  | VLM fine-tuning (smaller) |
+| `scripts/continued-pretraining.py` | Qwen3-0.6B  | Domain adaptation         |
 
 Remote URL (for HF Jobs): `https://huggingface.co/datasets/uv-scripts/unsloth-jobs/raw/main/`
 
@@ -81,19 +81,19 @@ Add `--trackio-space <username>/trackio` to any command for live monitoring.
 
 ## Common Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--dataset` | HF dataset ID | *required* |
-| `--output-repo` | Where to save trained model | *required* |
-| `--max-steps` | Training steps | 500 |
-| `--num-epochs` | Train for N epochs (overrides steps) | - |
-| `--eval-split` | Fraction for evaluation | 0 |
-| `--batch-size` | Per-device batch size | 2 |
-| `--gradient-accumulation` | Accumulation steps | 4 |
-| `--lora-r` | LoRA rank | 16 |
-| `--learning-rate` | Learning rate | 2e-4 |
-| `--merge-model` | Upload merged model (not just adapter) | false |
-| `--streaming` | Stream large datasets | false |
+| Option                    | Description                            | Default    |
+| ------------------------- | -------------------------------------- | ---------- |
+| `--dataset`               | HF dataset ID                          | _required_ |
+| `--output-repo`           | Where to save trained model            | _required_ |
+| `--max-steps`             | Training steps                         | 500        |
+| `--num-epochs`            | Train for N epochs (overrides steps)   | -          |
+| `--eval-split`            | Fraction for evaluation                | 0          |
+| `--batch-size`            | Per-device batch size                  | 2          |
+| `--gradient-accumulation` | Accumulation steps                     | 4          |
+| `--lora-r`                | LoRA rank                              | 16         |
+| `--learning-rate`         | Learning rate                          | 2e-4       |
+| `--merge-model`           | Upload merged model (not just adapter) | false      |
+| `--streaming`             | Stream large datasets                  | false      |
 
 ## Quick Tips
 

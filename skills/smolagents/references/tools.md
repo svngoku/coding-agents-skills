@@ -85,7 +85,7 @@ def calculate_compound_interest(
 ) -> float:
     """
     Calculate compound interest on an investment.
-    
+
     Args:
         principal: Initial investment amount in dollars.
         rate: Annual interest rate as a decimal (e.g., 0.05 for 5%).
@@ -97,6 +97,7 @@ def calculate_compound_interest(
 ```
 
 **Requirements:**
+
 - Detailed docstring with `Args:` section
 - Type hints on all parameters
 - Return type hint
@@ -151,16 +152,16 @@ tool = Tool.from_function(
 
 ### Supported Types
 
-| Type | JSON Schema | Python Type |
-|------|-------------|-------------|
-| `string` | `"type": "string"` | `str` |
-| `integer` | `"type": "integer"` | `int` |
-| `number` | `"type": "number"` | `float` |
-| `boolean` | `"type": "boolean"` | `bool` |
-| `array` | `"type": "array"` | `list` |
-| `object` | `"type": "object"` | `dict` |
-| `image` | Special handling | `PIL.Image` |
-| `audio` | Special handling | Audio data |
+| Type      | JSON Schema         | Python Type |
+| --------- | ------------------- | ----------- |
+| `string`  | `"type": "string"`  | `str`       |
+| `integer` | `"type": "integer"` | `int`       |
+| `number`  | `"type": "number"`  | `float`     |
+| `boolean` | `"type": "boolean"` | `bool`      |
+| `array`   | `"type": "array"`   | `list`      |
+| `object`  | `"type": "object"`  | `dict`      |
+| `image`   | Special handling    | `PIL.Image` |
+| `audio`   | Special handling    | Audio data  |
 
 ### Complex Input Types
 
@@ -271,8 +272,8 @@ with ToolCollection.from_mcp(stdio_params, trust_remote_code=True) as tools:
 
 # With structured output
 with ToolCollection.from_mcp(
-    stdio_params, 
-    trust_remote_code=True, 
+    stdio_params,
+    trust_remote_code=True,
     structured_output=True
 ) as tools:
     agent = CodeAgent(tools=[*tools.tools], model=model)
@@ -290,7 +291,7 @@ class MyTool(Tool):
     description = "Does something useful"
     inputs = {"x": {"type": "string", "description": "Input"}}
     output_type = "string"
-    
+
     def forward(self, x: str) -> str:
         return f"Processed: {x}"
 
@@ -325,12 +326,12 @@ def process(x):
 def analyze_sentiment(text: str) -> dict:
     """
     Analyze the sentiment of input text.
-    
+
     Returns a dictionary with:
     - sentiment: 'positive', 'negative', or 'neutral'
     - confidence: float between 0 and 1
     - keywords: list of sentiment-bearing words found
-    
+
     Args:
         text: The text to analyze. Can be any length but works best with 1-5 sentences.
     """
@@ -344,7 +345,7 @@ def analyze_sentiment(text: str) -> dict:
 def divide(a: float, b: float) -> float:
     """
     Divide a by b.
-    
+
     Args:
         a: Numerator.
         b: Denominator (must not be zero).
@@ -361,7 +362,7 @@ def divide(a: float, b: float) -> float:
 def fetch_url(url: str) -> str:
     """
     Fetch content from a URL.
-    
+
     Args:
         url: The URL to fetch.
     """
@@ -385,23 +386,23 @@ def fetch_url(url: str) -> str:
 def search_database(query: str) -> str:
     """
     Search the database.
-    
+
     Args:
         query: Search query.
     """
     results = db.search(query)
-    
+
     # Limit results to prevent token overflow
     if len(results) > 10:
         results = results[:10]
         truncated = True
     else:
         truncated = False
-    
+
     output = "\n".join([str(r) for r in results])
     if truncated:
         output += "\n[Results truncated, showing first 10]"
-    
+
     return output
 ```
 

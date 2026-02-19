@@ -85,7 +85,7 @@ vectorstore = InMemoryVectorStore.from_documents(docs, embeddings)
 
 # Chroma (local persistence)
 vectorstore = Chroma.from_documents(
-    docs, embeddings, 
+    docs, embeddings,
     persist_directory="./chroma_db"
 )
 
@@ -149,7 +149,7 @@ from langchain.tools import tool, ToolRuntime
 def search_knowledge_base(query: str, runtime: ToolRuntime) -> str:
     """Search knowledge base with user context."""
     user_dept = runtime.context.department
-    
+
     # Filter by department
     docs = vectorstore.similarity_search(
         query,
@@ -162,11 +162,11 @@ def search_knowledge_base(query: str, runtime: ToolRuntime) -> str:
 def search_with_history(query: str, runtime: ToolRuntime) -> str:
     """Search considering conversation history."""
     messages = runtime.state["messages"]
-    
+
     # Expand query with context
     context = extract_context(messages[-5:])
     expanded = f"{context} {query}"
-    
+
     return vectorstore.similarity_search(expanded, k=3)
 ```
 
@@ -213,7 +213,7 @@ retriever = SelfQueryRetriever.from_llm(
     metadata_field_info=metadata_field_info
 )
 
-# Query: "papers by Smith after 2020" 
+# Query: "papers by Smith after 2020"
 # Auto-generates: filter={"author": "Smith", "year": {"$gt": 2020}}
 ```
 

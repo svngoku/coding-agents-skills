@@ -3,6 +3,7 @@
 Criteria for reviewing DDD implementations. Use as PR checklist or architecture review guide.
 
 ## Table of Contents
+
 1. [Quick Checklist](#quick-checklist)
 2. [Strategic Design Review](#strategic-design-review)
 3. [Tactical Design Review](#tactical-design-review)
@@ -15,6 +16,7 @@ Criteria for reviewing DDD implementations. Use as PR checklist or architecture 
 ## Quick Checklist
 
 ### Must Pass (Blockers)
+
 - [ ] Domain layer has zero infrastructure dependencies
 - [ ] Aggregates enforce their invariants
 - [ ] Value objects are immutable
@@ -22,6 +24,7 @@ Criteria for reviewing DDD implementations. Use as PR checklist or architecture 
 - [ ] No anemic domain models (behavior in entities, not just data)
 
 ### Should Pass (Warnings)
+
 - [ ] Ubiquitous language used in code
 - [ ] Aggregates are small and focused
 - [ ] Domain events for cross-aggregate communication
@@ -29,6 +32,7 @@ Criteria for reviewing DDD implementations. Use as PR checklist or architecture 
 - [ ] Aggregates reference other aggregates by ID only
 
 ### Nice to Have
+
 - [ ] Specification pattern for complex queries
 - [ ] Factory pattern for complex creation
 - [ ] Domain services are stateless
@@ -40,27 +44,30 @@ Criteria for reviewing DDD implementations. Use as PR checklist or architecture 
 
 ### Bounded Context Assessment
 
-| Check | Pass | Fail |
-|-------|------|------|
-| Context has clear, documented boundaries | ✓ | ✗ |
-| Ubiquitous language defined and used | ✓ | ✗ |
-| No model leakage between contexts | ✓ | ✗ |
-| Context map documented | ✓ | ✗ |
-| Integration patterns explicitly chosen | ✓ | ✗ |
+| Check                                    | Pass | Fail |
+| ---------------------------------------- | ---- | ---- |
+| Context has clear, documented boundaries | ✓    | ✗    |
+| Ubiquitous language defined and used     | ✓    | ✗    |
+| No model leakage between contexts        | ✓    | ✗    |
+| Context map documented                   | ✓    | ✗    |
+| Integration patterns explicitly chosen   | ✓    | ✗    |
 
 ### Questions to Ask
 
 **Boundary clarity:**
+
 - Can you explain where this context starts and ends?
 - What other contexts does this interact with?
 - Are there terms that mean different things in different contexts?
 
 **Language alignment:**
+
 - Do class names match domain expert terminology?
 - Would a domain expert understand this code?
 - Are there any "translation" comments explaining technical-to-business mappings?
 
 ### Red Flags 🚩
+
 - Same entity class used across multiple contexts
 - "Shared" packages between bounded contexts
 - Database tables accessed by multiple contexts
@@ -81,6 +88,7 @@ Criteria for reviewing DDD implementations. Use as PR checklist or architecture 
 ```
 
 **Good Example:**
+
 ```python
 class Order:
     def place(self) -> None:
@@ -90,10 +98,11 @@ class Order:
 ```
 
 **Bad Example:**
+
 ```python
 class Order:
     status: str  # No encapsulation
-    
+
 # Logic outside entity
 def place_order(order):
     if not order.lines:
@@ -112,10 +121,14 @@ def place_order(order):
 ```
 
 **Good Example:**
+
 ```typescript
 class Money {
-  private constructor(readonly amount: number, readonly currency: string) {}
-  
+  private constructor(
+    readonly amount: number,
+    readonly currency: string,
+  ) {}
+
   add(other: Money): Money {
     return new Money(this.amount + other.amount, this.currency);
   }
@@ -123,13 +136,14 @@ class Money {
 ```
 
 **Bad Example:**
+
 ```typescript
 class Money {
-  amount: number;  // Mutable!
+  amount: number; // Mutable!
   currency: string;
-  
+
   add(other: Money): void {
-    this.amount += other.amount;  // Mutates!
+    this.amount += other.amount; // Mutates!
   }
 }
 ```
@@ -146,6 +160,7 @@ class Money {
 ```
 
 **Sizing Questions:**
+
 - Does this aggregate need to be this large?
 - Are all entities truly part of the same consistency boundary?
 - Could this be split into smaller aggregates?
@@ -161,6 +176,7 @@ class Money {
 ```
 
 **Good Example:**
+
 ```python
 # domain/repository/order_repository.py
 class OrderRepository(Protocol):
@@ -238,25 +254,25 @@ Application → Interface  ✗
 
 ### Naming Conventions
 
-| Element | Convention | Example |
-|---------|------------|---------|
-| Aggregate | Noun (singular) | `Order`, `Customer` |
-| Entity | Noun (singular) | `OrderLine`, `Address` |
-| Value Object | Noun (descriptive) | `Money`, `EmailAddress` |
-| Domain Service | Verb + Noun | `PricingService`, `InventoryChecker` |
-| Repository | Aggregate + Repository | `OrderRepository` |
-| Domain Event | Noun + Past Participle | `OrderPlaced`, `PaymentReceived` |
-| Command | Verb + Noun | `PlaceOrder`, `CancelOrder` |
-| Query | Get + Noun | `GetOrderDetails`, `FindOrdersByCustomer` |
+| Element        | Convention             | Example                                   |
+| -------------- | ---------------------- | ----------------------------------------- |
+| Aggregate      | Noun (singular)        | `Order`, `Customer`                       |
+| Entity         | Noun (singular)        | `OrderLine`, `Address`                    |
+| Value Object   | Noun (descriptive)     | `Money`, `EmailAddress`                   |
+| Domain Service | Verb + Noun            | `PricingService`, `InventoryChecker`      |
+| Repository     | Aggregate + Repository | `OrderRepository`                         |
+| Domain Event   | Noun + Past Participle | `OrderPlaced`, `PaymentReceived`          |
+| Command        | Verb + Noun            | `PlaceOrder`, `CancelOrder`               |
+| Query          | Get + Noun             | `GetOrderDetails`, `FindOrdersByCustomer` |
 
 ### Test Coverage Expectations
 
-| Layer | Coverage | Focus |
-|-------|----------|-------|
-| Domain | 90%+ | Business rules, invariants |
-| Application | 80%+ | Use case orchestration |
-| Infrastructure | 70%+ | Integration, mapping |
-| Interface | 60%+ | Request/response handling |
+| Layer          | Coverage | Focus                      |
+| -------------- | -------- | -------------------------- |
+| Domain         | 90%+     | Business rules, invariants |
+| Application    | 80%+     | Use case orchestration     |
+| Infrastructure | 70%+     | Integration, mapping       |
+| Interface      | 60%+     | Request/response handling  |
 
 ### Documentation Check
 
@@ -275,6 +291,7 @@ Application → Interface  ✗
 ### Issue: Anemic Domain Model
 
 **Symptom:** Entities have only getters/setters, all logic in services
+
 ```python
 # BAD
 class Order:
@@ -289,6 +306,7 @@ class OrderService:
 ```
 
 **Fix:** Move behavior into entities
+
 ```python
 # GOOD
 class Order:
@@ -307,6 +325,7 @@ class Order:
 ### Issue: Infrastructure in Domain
 
 **Symptom:** Domain classes import database, HTTP, or other infrastructure
+
 ```python
 # BAD
 from sqlalchemy import Column  # Infrastructure leak!
@@ -316,6 +335,7 @@ class Order:
 ```
 
 **Fix:** Keep domain pure, use separate ORM models
+
 ```python
 # GOOD - domain/model/order.py
 @dataclass
@@ -330,6 +350,7 @@ class OrderModel(Base):
 ### Issue: Missing Ubiquitous Language
 
 **Symptom:** Code uses technical terms, domain experts can't read it
+
 ```python
 # BAD
 class OrderDTO:
@@ -337,6 +358,7 @@ class OrderDTO:
 ```
 
 **Fix:** Use domain terms
+
 ```python
 # GOOD
 class Order:
@@ -346,6 +368,7 @@ class Order:
 ### Issue: Aggregate Reference by Object
 
 **Symptom:** Aggregate holds reference to another aggregate object
+
 ```python
 # BAD
 class Order:
@@ -353,6 +376,7 @@ class Order:
 ```
 
 **Fix:** Reference by ID only
+
 ```python
 # GOOD
 class Order:
@@ -362,6 +386,7 @@ class Order:
 ### Issue: Transaction Spanning Aggregates
 
 **Symptom:** Single transaction modifies multiple aggregates
+
 ```python
 # BAD
 def place_order(order, inventory):
@@ -371,6 +396,7 @@ def place_order(order, inventory):
 ```
 
 **Fix:** Use domain events for eventual consistency
+
 ```python
 # GOOD
 def place_order(order):
@@ -395,27 +421,33 @@ def on_order_placed(event):
 **Date:** 2024-01-15
 
 ### Strategic Design
+
 - [ ] Bounded context boundaries respected
 - [ ] Ubiquitous language used
 - [ ] Context integration patterns appropriate
 
 ### Tactical Design
+
 - [ ] Entities have behavior
 - [ ] Value objects immutable
 - [ ] Aggregates enforce invariants
 - [ ] Repositories properly abstracted
 
 ### Architecture
+
 - [ ] Layer dependencies correct
 - [ ] Domain has no infrastructure dependencies
 - [ ] Dependency injection used
 
 ### Blockers
+
 - List any blocking issues
 
 ### Suggestions
+
 - List non-blocking improvements
 
 ### Questions
+
 - List questions for author
 ```

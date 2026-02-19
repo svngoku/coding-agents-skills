@@ -5,6 +5,7 @@
 ## 📖 Overview
 
 This repository provides production-ready skill modules for AI coding agents, enabling them to:
+
 - Apply software design patterns and architectural principles
 - Work with modern AI frameworks and tools
 - Follow best practices in code generation and refactoring
@@ -42,11 +43,13 @@ coding-agents-skills/
 ## 🎯 Available Skills
 
 ### 1. Domain-Driven Design (DDD)
+
 **Status:** ✅ Complete
 
 **Description:** Comprehensive DDD skill for building software that reflects deep understanding of business domains.
 
 **Capabilities:**
+
 - Strategic design (bounded contexts, subdomains, context maps)
 - Tactical design (entities, value objects, aggregates, repositories)
 - Architecture patterns (Hexagonal, CQRS, Event Sourcing, Clean Architecture)
@@ -55,6 +58,7 @@ coding-agents-skills/
 - DDD code review guidance
 
 **Use Cases:**
+
 - Designing new systems with DDD principles
 - Refactoring existing codebases toward DDD
 - Generating code scaffolding (entities, aggregates, repositories)
@@ -65,11 +69,13 @@ coding-agents-skills/
 ---
 
 ### 2. LangChain
+
 **Status:** ✅ Complete
 
 **Description:** Build AI applications with LangChain framework.
 
 **Capabilities:**
+
 - Chain construction and composition
 - Memory management
 - Agent creation and orchestration
@@ -79,11 +85,13 @@ coding-agents-skills/
 ---
 
 ### 3. SmolAgents
+
 **Status:** ✅ Complete
 
 **Description:** Build AI agents with Hugging Face's minimalist SmolAgents framework.
 
 **Capabilities:**
+
 - CodeAgent and ToolCallingAgent creation
 - Custom tool development
 - MCP (Model Context Protocol) integration
@@ -108,12 +116,14 @@ Each skill can be loaded by agents to enhance their capabilities:
 ### For Developers
 
 **Clone the repository:**
+
 ```bash
 git clone https://github.com/svngoku/coding-agents-skills.git
 cd coding-agents-skills
 ```
 
 **Browse skills:**
+
 ```bash
 # View available skills
 ls skills/
@@ -128,6 +138,7 @@ ls skills/ddd/references/
 ### Integration Examples
 
 #### With SmolAgents
+
 ```python
 from smolagents import CodeAgent, HfApiModel
 
@@ -145,6 +156,7 @@ result = agent.run(
 ```
 
 #### With LangChain
+
 ```python
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_openai import ChatOpenAI
@@ -165,33 +177,41 @@ result = agent_executor.invoke({
 Each skill follows a consistent structure:
 
 ### SKILL.md Format
+
 ```markdown
 # Skill Name
 
-| name | description |
-|------|-------------|
+| name       | description                                            |
+| ---------- | ------------------------------------------------------ |
 | skill-name | Detailed description of when and how to use this skill |
 
 ## Overview
+
 [Brief introduction]
 
 ## Quick Reference
+
 [Table linking to reference files]
 
 ## Core Workflow
+
 [Step-by-step usage guide]
 
 ## Implementation Guidelines
+
 [Concrete examples and patterns]
 
 ## Anti-Patterns to Avoid
+
 [Common mistakes]
 
 ## When to Use / Not Use
+
 [Decision criteria]
 ```
 
 ### References Structure
+
 - Each skill has a `references/` directory
 - Reference files are in Markdown format
 - Cover specific aspects of the skill in depth
@@ -210,6 +230,7 @@ Contributions are welcome! To add a new skill:
 4. **Submit a pull request**
 
 ### Skill Guidelines
+
 - Skills should be atomic and focused on a single domain
 - Include both conceptual explanations and practical examples
 - Provide language-specific implementations where relevant
@@ -241,6 +262,7 @@ MIT License - see LICENSE file for details
 ## 👤 Author
 
 **svngoku**
+
 - GitHub: [@svngoku](https://github.com/svngoku)
 
 ## 🙏 Acknowledgments

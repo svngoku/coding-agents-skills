@@ -68,6 +68,7 @@ def get_user_data(runtime: ToolRuntime[Context]) -> str:
 - `runtime.stream_writer` - Stream updates during execution
 
 ### Reserved Parameters
+
 Cannot use as tool args: `config`, `runtime`
 
 ## Memory
@@ -180,7 +181,7 @@ def clear_history() -> Command:
     """Clear conversation."""
     return Command(update={"messages": [RemoveMessage(id="__all__")]})
 
-@tool  
+@tool
 def complete_task() -> Command:
     """End agent run."""
     return Command(update={"status": "done"}, goto="__end__")
@@ -231,6 +232,7 @@ result = agent.invoke(
 ## References
 
 For detailed patterns, see:
+
 - `references/langgraph.md` - LangGraph workflows, graphs, persistence
 - `references/multi-agent.md` - Handoffs, routers, subagents
 - `references/retrieval.md` - RAG, vector stores, embeddings

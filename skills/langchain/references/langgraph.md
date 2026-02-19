@@ -50,7 +50,7 @@ from langgraph.func import entrypoint, task
 def step_one(data: str) -> str:
     return f"processed: {data}"
 
-@task  
+@task
 def step_two(data: str) -> str:
     return f"finalized: {data}"
 
@@ -113,7 +113,7 @@ def sensitive_action(state: State) -> dict:
         "action": "delete_all",
         "message": "Approve deletion?"
     })
-    
+
     if approval.get("approved"):
         return {"status": "deleted"}
     return {"status": "cancelled"}

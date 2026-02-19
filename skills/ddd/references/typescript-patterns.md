@@ -3,6 +3,7 @@
 Implementations using popular TypeScript frameworks: NestJS, TypeORM, Prisma.
 
 ## Table of Contents
+
 1. [Project Setup](#project-setup)
 2. [Value Objects](#value-objects)
 3. [Entities and Aggregates](#entities-and-aggregates)
@@ -90,24 +91,21 @@ src/
 export class Money {
   private constructor(
     public readonly amount: number,
-    public readonly currency: string
+    public readonly currency: string,
   ) {
     if (amount < 0) {
-      throw new Error('Amount cannot be negative');
+      throw new Error("Amount cannot be negative");
     }
     if (currency.length !== 3) {
-      throw new Error('Currency must be 3-letter ISO code');
+      throw new Error("Currency must be 3-letter ISO code");
     }
   }
 
-  static create(amount: number, currency: string = 'USD'): Money {
-    return new Money(
-      Math.round(amount * 100) / 100,
-      currency.toUpperCase()
-    );
+  static create(amount: number, currency: string = "USD"): Money {
+    return new Money(Math.round(amount * 100) / 100, currency.toUpperCase());
   }
 
-  static zero(currency: string = 'USD'): Money {
+  static zero(currency: string = "USD"): Money {
     return new Money(0, currency);
   }
 
@@ -131,18 +129,20 @@ export class Money {
 
   private assertSameCurrency(other: Money): void {
     if (this.currency !== other.currency) {
-      throw new Error(`Currency mismatch: ${this.currency} vs ${other.currency}`);
+      throw new Error(
+        `Currency mismatch: ${this.currency} vs ${other.currency}`,
+      );
     }
   }
 }
 
 // domain/model/value-objects/order-id.ts
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export class OrderId {
   private constructor(public readonly value: string) {
-    if (!value || value.trim() === '') {
-      throw new Error('OrderId cannot be empty');
+    if (!value || value.trim() === "") {
+      throw new Error("OrderId cannot be empty");
     }
   }
 
@@ -187,7 +187,7 @@ export class Address {
     public readonly city: string,
     public readonly state: string,
     public readonly postalCode: string,
-    public readonly country: string
+    public readonly country: string,
   ) {}
 
   static create(props: {
@@ -202,7 +202,7 @@ export class Address {
       props.city,
       props.state,
       props.postalCode,
-      props.country ?? 'US'
+      props.country ?? "US",
     );
   }
 
@@ -228,16 +228,16 @@ export class Address {
 
 ```typescript
 // domain/model/order-line.ts
-import { Money } from './value-objects/money';
+import { Money } from "./value-objects/money";
 
 export class OrderLine {
   constructor(
     public readonly productId: string,
     public readonly quantity: number,
-    public readonly unitPrice: Money
+    public readonly unitPrice: Money,
   ) {
     if (quantity <= 0) {
-      throw new Error('Quantity must be positive');
+      throw new Error("Quantity must be positive");
     }
   }
 
@@ -247,18 +247,18 @@ export class OrderLine {
 }
 
 // domain/model/order.ts
-import { OrderId, CustomerId, Money } from './value-objects';
-import { OrderLine } from './order-line';
-import { DomainEvent } from '../event/domain-event';
-import { OrderPlaced, OrderCancelled } from '../event/order-events';
+import { OrderId, CustomerId, Money } from "./value-objects";
+import { OrderLine } from "./order-line";
+import { DomainEvent } from "../event/domain-event";
+import { OrderPlaced, OrderCancelled } from "../event/order-events";
 
 export enum OrderStatus {
-  Draft = 'draft',
-  Placed = 'placed',
-  Paid = 'paid',
-  Shipped = 'shipped',
-  Delivered = 'delivered',
-  Cancelled = 'cancelled',
+  Draft = "draft",
+  Placed = "placed",
+  Paid = "paid",
+  Shipped = "shipped",
+  Delivered = "delivered",
+  Cancelled = "cancelled",
 }
 
 export class Order {
@@ -269,7 +269,7 @@ export class Order {
     public readonly customerId: CustomerId,
     private _status: OrderStatus,
     private _lines: OrderLine[],
-    private _placedAt: Date | null
+    private _placedAt: Date | null,
   ) {}
 
   // Factory
@@ -279,7 +279,7 @@ export class Order {
       customerId,
       OrderStatus.Draft,
       [],
-      null
+      null,
     );
   }
 
@@ -296,7 +296,7 @@ export class Order {
       props.customerId,
       props.status,
       props.lines,
-      props.placedAt
+      props.placedAt,
     );
   }
 
@@ -319,7 +319,7 @@ export class Order {
     }
     return this._lines.reduce(
       (sum, line) => sum.add(line.subtotal),
-      Money.zero()
+      Money.zero(),
     );
   }
 
@@ -343,14 +343,14 @@ export class Order {
   place(): void {
     this.assertDraft();
     if (this._lines.length === 0) {
-      throw new EmptyOrderError('Cannot place order without items');
+      throw new EmptyOrderError("Cannot place order without items");
     }
 
     this._status = OrderStatus.Placed;
     this._placedAt = new Date();
 
     this._events.push(
-      new OrderPlaced(this.id, this.customerId, this.total, this._placedAt)
+      new OrderPlaced(this.id, this.customerId, this.total, this._placedAt),
     );
   }
 
@@ -359,9 +359,7 @@ export class Order {
       this._status === OrderStatus.Shipped ||
       this._status === OrderStatus.Delivered
     ) {
-      throw new InvalidOrderStateError(
-        'Cannot cancel shipped/delivered order'
-      );
+      throw new InvalidOrderStateError("Cannot cancel shipped/delivered order");
     }
 
     this._status = OrderStatus.Cancelled;
@@ -378,7 +376,7 @@ export class Order {
   // Invariants
   private assertDraft(): void {
     if (this._status !== OrderStatus.Draft) {
-      throw new InvalidOrderStateError('Can only modify draft orders');
+      throw new InvalidOrderStateError("Can only modify draft orders");
     }
   }
 
@@ -402,7 +400,7 @@ export class DuplicateProductError extends OrderError {}
 
 ```typescript
 // domain/event/domain-event.ts
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export abstract class DomainEvent {
   public readonly eventId: string;
@@ -415,15 +413,15 @@ export abstract class DomainEvent {
 }
 
 // domain/event/order-events.ts
-import { DomainEvent } from './domain-event';
-import { OrderId, CustomerId, Money } from '../model/value-objects';
+import { DomainEvent } from "./domain-event";
+import { OrderId, CustomerId, Money } from "../model/value-objects";
 
 export class OrderPlaced extends DomainEvent {
   constructor(
     public readonly orderId: OrderId,
     public readonly customerId: CustomerId,
     public readonly total: Money,
-    public readonly placedAt: Date
+    public readonly placedAt: Date,
   ) {
     super();
   }
@@ -432,7 +430,7 @@ export class OrderPlaced extends DomainEvent {
 export class OrderCancelled extends DomainEvent {
   constructor(
     public readonly orderId: OrderId,
-    public readonly reason: string
+    public readonly reason: string,
   ) {
     super();
   }
@@ -442,7 +440,7 @@ export class OrderShipped extends DomainEvent {
   constructor(
     public readonly orderId: OrderId,
     public readonly trackingNumber: string,
-    public readonly carrier: string
+    public readonly carrier: string,
   ) {
     super();
   }
@@ -455,8 +453,8 @@ export class OrderShipped extends DomainEvent {
 
 ```typescript
 // domain/repository/order.repository.ts
-import { Order } from '../model/order';
-import { OrderId, CustomerId } from '../model/value-objects';
+import { Order } from "../model/order";
+import { OrderId, CustomerId } from "../model/value-objects";
 
 export interface OrderRepository {
   findById(orderId: OrderId): Promise<Order | null>;
@@ -464,7 +462,7 @@ export interface OrderRepository {
   findByCustomer(customerId: CustomerId): Promise<Order[]>;
 }
 
-export const ORDER_REPOSITORY = Symbol('OrderRepository');
+export const ORDER_REPOSITORY = Symbol("OrderRepository");
 
 // infrastructure/persistence/typeorm/entities/order.entity.ts
 import {
@@ -473,21 +471,21 @@ import {
   Column,
   OneToMany,
   CreateDateColumn,
-} from 'typeorm';
-import { OrderLineEntity } from './order-line.entity';
+} from "typeorm";
+import { OrderLineEntity } from "./order-line.entity";
 
-@Entity('orders')
+@Entity("orders")
 export class OrderEntity {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn("uuid")
   id: string;
 
-  @Column('uuid')
+  @Column("uuid")
   customerId: string;
 
   @Column({ length: 20 })
   status: string;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   placedAt: Date | null;
 
   @OneToMany(() => OrderLineEntity, (line) => line.order, {
@@ -498,21 +496,21 @@ export class OrderEntity {
 }
 
 // infrastructure/persistence/typeorm/entities/order-line.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { OrderEntity } from './order.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { OrderEntity } from "./order.entity";
 
-@Entity('order_lines')
+@Entity("order_lines")
 export class OrderLineEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('uuid')
+  @Column("uuid")
   productId: string;
 
-  @Column('int')
+  @Column("int")
   quantity: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column("decimal", { precision: 10, scale: 2 })
   unitPriceAmount: number;
 
   @Column({ length: 3 })
@@ -523,28 +521,32 @@ export class OrderLineEntity {
 }
 
 // infrastructure/persistence/typeorm/order.repository.ts
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 
-import { OrderRepository } from '../../../domain/repository/order.repository';
-import { Order, OrderStatus } from '../../../domain/model/order';
-import { OrderLine } from '../../../domain/model/order-line';
-import { OrderId, CustomerId, Money } from '../../../domain/model/value-objects';
-import { OrderEntity } from './entities/order.entity';
-import { OrderLineEntity } from './entities/order-line.entity';
+import { OrderRepository } from "../../../domain/repository/order.repository";
+import { Order, OrderStatus } from "../../../domain/model/order";
+import { OrderLine } from "../../../domain/model/order-line";
+import {
+  OrderId,
+  CustomerId,
+  Money,
+} from "../../../domain/model/value-objects";
+import { OrderEntity } from "./entities/order.entity";
+import { OrderLineEntity } from "./entities/order-line.entity";
 
 @Injectable()
 export class TypeOrmOrderRepository implements OrderRepository {
   constructor(
     @InjectRepository(OrderEntity)
-    private readonly repo: Repository<OrderEntity>
+    private readonly repo: Repository<OrderEntity>,
   ) {}
 
   async findById(orderId: OrderId): Promise<Order | null> {
     const entity = await this.repo.findOne({
       where: { id: orderId.value },
-      relations: ['lines'],
+      relations: ["lines"],
     });
     return entity ? this.toDomain(entity) : null;
   }
@@ -557,7 +559,7 @@ export class TypeOrmOrderRepository implements OrderRepository {
   async findByCustomer(customerId: CustomerId): Promise<Order[]> {
     const entities = await this.repo.find({
       where: { customerId: customerId.value },
-      relations: ['lines'],
+      relations: ["lines"],
     });
     return entities.map((e) => this.toDomain(e));
   }
@@ -573,8 +575,8 @@ export class TypeOrmOrderRepository implements OrderRepository {
           new OrderLine(
             l.productId,
             l.quantity,
-            Money.create(l.unitPriceAmount, l.unitPriceCurrency)
-          )
+            Money.create(l.unitPriceAmount, l.unitPriceCurrency),
+          ),
       ),
     });
   }
@@ -625,13 +627,17 @@ model OrderLine {
 
 ```typescript
 // infrastructure/persistence/prisma/order.repository.ts
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "./prisma.service";
 
-import { OrderRepository } from '../../../domain/repository/order.repository';
-import { Order, OrderStatus } from '../../../domain/model/order';
-import { OrderLine } from '../../../domain/model/order-line';
-import { OrderId, CustomerId, Money } from '../../../domain/model/value-objects';
+import { OrderRepository } from "../../../domain/repository/order.repository";
+import { Order, OrderStatus } from "../../../domain/model/order";
+import { OrderLine } from "../../../domain/model/order-line";
+import {
+  OrderId,
+  CustomerId,
+  Money,
+} from "../../../domain/model/value-objects";
 
 @Injectable()
 export class PrismaOrderRepository implements OrderRepository {
@@ -698,8 +704,8 @@ export class PrismaOrderRepository implements OrderRepository {
           new OrderLine(
             l.productId,
             l.quantity,
-            Money.create(Number(l.unitPriceAmount), l.unitPriceCurrency)
-          )
+            Money.create(Number(l.unitPriceAmount), l.unitPriceCurrency),
+          ),
       ),
     });
   }
@@ -712,15 +718,15 @@ export class PrismaOrderRepository implements OrderRepository {
 
 ```typescript
 // application/command/place-order.handler.ts
-import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
-import { Inject } from '@nestjs/common';
+import { CommandHandler, ICommandHandler, EventBus } from "@nestjs/cqrs";
+import { Inject } from "@nestjs/common";
 
-import { Order } from '../../domain/model/order';
-import { CustomerId, Money } from '../../domain/model/value-objects';
+import { Order } from "../../domain/model/order";
+import { CustomerId, Money } from "../../domain/model/value-objects";
 import {
   OrderRepository,
   ORDER_REPOSITORY,
-} from '../../domain/repository/order.repository';
+} from "../../domain/repository/order.repository";
 
 export class PlaceOrderCommand {
   constructor(
@@ -730,7 +736,7 @@ export class PlaceOrderCommand {
       quantity: number;
       unitPrice: number;
       currency?: string;
-    }>
+    }>,
   ) {}
 }
 
@@ -739,7 +745,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand> {
   constructor(
     @Inject(ORDER_REPOSITORY)
     private readonly orderRepository: OrderRepository,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: PlaceOrderCommand): Promise<string> {
@@ -749,7 +755,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand> {
       order.addLine(
         item.productId,
         item.quantity,
-        Money.create(item.unitPrice, item.currency ?? 'USD')
+        Money.create(item.unitPrice, item.currency ?? "USD"),
       );
     }
 
@@ -772,11 +778,17 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand> {
 
 ```typescript
 // interface/http/controllers/order.controller.ts
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpException,
+  HttpStatus,
+} from "@nestjs/common";
+import { CommandBus } from "@nestjs/cqrs";
 
-import { PlaceOrderCommand } from '../../../application/command/place-order.handler';
-import { OrderError } from '../../../domain/model/order';
+import { PlaceOrderCommand } from "../../../application/command/place-order.handler";
+import { OrderError } from "../../../domain/model/order";
 
 class OrderItemDto {
   productId: string;
@@ -794,15 +806,17 @@ class CreateOrderResponseDto {
   orderId: string;
 }
 
-@Controller('orders')
+@Controller("orders")
 export class OrderController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Post()
-  async createOrder(@Body() dto: CreateOrderDto): Promise<CreateOrderResponseDto> {
+  async createOrder(
+    @Body() dto: CreateOrderDto,
+  ): Promise<CreateOrderResponseDto> {
     try {
       const orderId = await this.commandBus.execute(
-        new PlaceOrderCommand(dto.customerId, dto.items)
+        new PlaceOrderCommand(dto.customerId, dto.items),
       );
       return { orderId };
     } catch (error) {
@@ -815,15 +829,15 @@ export class OrderController {
 }
 
 // Module setup
-import { Module } from '@nestjs/common';
-import { CqrsModule } from '@nestjs/cqrs';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module } from "@nestjs/common";
+import { CqrsModule } from "@nestjs/cqrs";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { OrderController } from './interface/http/controllers/order.controller';
-import { PlaceOrderHandler } from './application/command/place-order.handler';
-import { TypeOrmOrderRepository } from './infrastructure/persistence/typeorm/order.repository';
-import { OrderEntity } from './infrastructure/persistence/typeorm/entities/order.entity';
-import { ORDER_REPOSITORY } from './domain/repository/order.repository';
+import { OrderController } from "./interface/http/controllers/order.controller";
+import { PlaceOrderHandler } from "./application/command/place-order.handler";
+import { TypeOrmOrderRepository } from "./infrastructure/persistence/typeorm/order.repository";
+import { OrderEntity } from "./infrastructure/persistence/typeorm/entities/order.entity";
+import { ORDER_REPOSITORY } from "./domain/repository/order.repository";
 
 @Module({
   imports: [CqrsModule, TypeOrmModule.forFeature([OrderEntity])],
@@ -845,35 +859,40 @@ export class OrderModule {}
 
 ```typescript
 // tests/domain/order.spec.ts
-import { Order, OrderStatus, EmptyOrderError, InvalidOrderStateError } from '../../domain/model/order';
-import { CustomerId, Money } from '../../domain/model/value-objects';
-import { OrderPlaced } from '../../domain/event/order-events';
+import {
+  Order,
+  OrderStatus,
+  EmptyOrderError,
+  InvalidOrderStateError,
+} from "../../domain/model/order";
+import { CustomerId, Money } from "../../domain/model/value-objects";
+import { OrderPlaced } from "../../domain/event/order-events";
 
-describe('Order', () => {
-  describe('create', () => {
-    it('creates draft order', () => {
-      const order = Order.create(CustomerId.create('cust-123'));
+describe("Order", () => {
+  describe("create", () => {
+    it("creates draft order", () => {
+      const order = Order.create(CustomerId.create("cust-123"));
 
       expect(order.status).toBe(OrderStatus.Draft);
       expect(order.lines).toHaveLength(0);
     });
   });
 
-  describe('addLine', () => {
-    it('adds line to order', () => {
-      const order = Order.create(CustomerId.create('cust-123'));
+  describe("addLine", () => {
+    it("adds line to order", () => {
+      const order = Order.create(CustomerId.create("cust-123"));
 
-      order.addLine('prod-1', 2, Money.create(10));
+      order.addLine("prod-1", 2, Money.create(10));
 
       expect(order.lines).toHaveLength(1);
       expect(order.total.amount).toBe(20);
     });
   });
 
-  describe('place', () => {
-    it('places order and emits event', () => {
-      const order = Order.create(CustomerId.create('cust-123'));
-      order.addLine('prod-1', 1, Money.create(10));
+  describe("place", () => {
+    it("places order and emits event", () => {
+      const order = Order.create(CustomerId.create("cust-123"));
+      order.addLine("prod-1", 1, Money.create(10));
 
       order.place();
 
@@ -883,35 +902,35 @@ describe('Order', () => {
       expect(events[0]).toBeInstanceOf(OrderPlaced);
     });
 
-    it('throws on empty order', () => {
-      const order = Order.create(CustomerId.create('cust-123'));
+    it("throws on empty order", () => {
+      const order = Order.create(CustomerId.create("cust-123"));
 
       expect(() => order.place()).toThrow(EmptyOrderError);
     });
   });
 
-  describe('modify placed order', () => {
-    it('throws when adding line to placed order', () => {
-      const order = Order.create(CustomerId.create('cust-123'));
-      order.addLine('prod-1', 1, Money.create(10));
+  describe("modify placed order", () => {
+    it("throws when adding line to placed order", () => {
+      const order = Order.create(CustomerId.create("cust-123"));
+      order.addLine("prod-1", 1, Money.create(10));
       order.place();
 
-      expect(() => order.addLine('prod-2', 1, Money.create(5))).toThrow(
-        InvalidOrderStateError
+      expect(() => order.addLine("prod-2", 1, Money.create(5))).toThrow(
+        InvalidOrderStateError,
       );
     });
   });
 });
 
 // tests/infrastructure/order.repository.spec.ts
-describe('TypeOrmOrderRepository', () => {
+describe("TypeOrmOrderRepository", () => {
   let repository: TypeOrmOrderRepository;
   let dataSource: DataSource;
 
   beforeAll(async () => {
     dataSource = await createTestDataSource();
     repository = new TypeOrmOrderRepository(
-      dataSource.getRepository(OrderEntity)
+      dataSource.getRepository(OrderEntity),
     );
   });
 
@@ -919,9 +938,9 @@ describe('TypeOrmOrderRepository', () => {
     await dataSource.destroy();
   });
 
-  it('saves and retrieves order', async () => {
-    const order = Order.create(CustomerId.create('cust-123'));
-    order.addLine('prod-1', 2, Money.create(10));
+  it("saves and retrieves order", async () => {
+    const order = Order.create(CustomerId.create("cust-123"));
+    order.addLine("prod-1", 2, Money.create(10));
 
     await repository.save(order);
     const retrieved = await repository.findById(order.id);

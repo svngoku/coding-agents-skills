@@ -488,6 +488,7 @@ def main():
     print(f"  Speed: {total_steps / train_time:.2f} steps/s")
 
     # Print training metrics
+    train_loss = None
     if train_result.metrics:
         train_loss = train_result.metrics.get("train_loss")
         if train_loss:

@@ -70,16 +70,16 @@ LiteLLMModel(
 
 ### Provider Formats
 
-| Provider | Format | Env Variable |
-|----------|--------|--------------|
-| Anthropic | `anthropic/claude-3-5-sonnet-latest` | `ANTHROPIC_API_KEY` |
-| OpenAI | `gpt-4o`, `gpt-4-turbo` | `OPENAI_API_KEY` |
-| Google | `gemini/gemini-pro` | `GEMINI_API_KEY` |
-| Mistral | `mistral/mistral-large-latest` | `MISTRAL_API_KEY` |
-| Ollama | `ollama_chat/llama3.2` | None |
-| Groq | `groq/llama3-70b-8192` | `GROQ_API_KEY` |
-| AWS Bedrock | `bedrock/anthropic.claude-3-sonnet` | AWS credentials |
-| Azure | `azure/gpt-4` | Azure credentials |
+| Provider    | Format                               | Env Variable        |
+| ----------- | ------------------------------------ | ------------------- |
+| Anthropic   | `anthropic/claude-3-5-sonnet-latest` | `ANTHROPIC_API_KEY` |
+| OpenAI      | `gpt-4o`, `gpt-4-turbo`              | `OPENAI_API_KEY`    |
+| Google      | `gemini/gemini-pro`                  | `GEMINI_API_KEY`    |
+| Mistral     | `mistral/mistral-large-latest`       | `MISTRAL_API_KEY`   |
+| Ollama      | `ollama_chat/llama3.2`               | None                |
+| Groq        | `groq/llama3-70b-8192`               | `GROQ_API_KEY`      |
+| AWS Bedrock | `bedrock/anthropic.claude-3-sonnet`  | AWS credentials     |
+| Azure       | `azure/gpt-4`                        | Azure credentials   |
 
 ### Examples
 
@@ -238,26 +238,31 @@ model = AmazonBedrockModel(
 ## Recommended Models by Use Case
 
 ### General Code Agents
+
 - `Qwen/Qwen2.5-Coder-32B-Instruct` (default, excellent)
 - `meta-llama/Llama-3.3-70B-Instruct`
 - `anthropic/claude-3-5-sonnet-latest`
 - `gpt-4o`
 
 ### Vision/Multimodal Agents
+
 - `Qwen/Qwen2-VL-72B-Instruct`
 - `gpt-4o` (with vision)
 - `anthropic/claude-3-5-sonnet-latest`
 
 ### Cost-Effective
+
 - `meta-llama/Llama-3.2-3B-Instruct` (local)
 - `groq/llama3-70b-8192` (fast + cheap)
 - `Qwen/Qwen2.5-7B-Instruct`
 
 ### Reasoning Tasks
+
 - `deepseek-ai/DeepSeek-R1`
 - `anthropic/claude-3-5-sonnet-latest`
 - `o1-preview` (OpenAI)
 
 ### Local Development
+
 - `ollama_chat/llama3.2` (via Ollama)
 - `meta-llama/Llama-3.2-3B-Instruct` (Transformers)

@@ -3,6 +3,7 @@
 Implementations using popular Python frameworks: Pydantic, SQLAlchemy, FastAPI.
 
 ## Table of Contents
+
 1. [Project Setup](#project-setup)
 2. [Value Objects with Pydantic](#value-objects-with-pydantic)
 3. [Entities and Aggregates](#entities-and-aggregates)
@@ -96,29 +97,29 @@ class Money(BaseModel, frozen=True):
     """Immutable value object for monetary amounts."""
     amount: Decimal
     currency: str = "USD"
-    
+
     @field_validator("amount")
     @classmethod
     def validate_amount(cls, v: Decimal) -> Decimal:
         if v < 0:
             raise ValueError("Amount cannot be negative")
         return v.quantize(Decimal("0.01"))
-    
+
     @field_validator("currency")
     @classmethod
     def validate_currency(cls, v: str) -> str:
         if len(v) != 3:
             raise ValueError("Currency must be 3-letter ISO code")
         return v.upper()
-    
+
     def add(self, other: Self) -> Self:
         if self.currency != other.currency:
             raise ValueError(f"Currency mismatch: {self.currency} vs {other.currency}")
         return Money(amount=self.amount + other.amount, currency=self.currency)
-    
+
     def multiply(self, factor: int | Decimal) -> Self:
         return Money(amount=self.amount * Decimal(factor), currency=self.currency)
-    
+
     @classmethod
     def zero(cls, currency: str = "USD") -> Self:
         return cls(amount=Decimal("0"), currency=currency)
@@ -131,13 +132,13 @@ class Address(BaseModel, frozen=True):
     state: str
     postal_code: str
     country: str = "US"
-    
+
     @model_validator(mode="after")
     def validate_address(self) -> Self:
         if self.country == "US" and len(self.postal_code) not in (5, 10):
             raise ValueError("US postal code must be 5 or 9 digits")
         return self
-    
+
     def format_single_line(self) -> str:
         return f"{self.street}, {self.city}, {self.state} {self.postal_code}"
 
@@ -145,25 +146,25 @@ class Address(BaseModel, frozen=True):
 class OrderId(BaseModel, frozen=True):
     """Typed ID to prevent mixing different entity IDs."""
     value: str
-    
+
     @classmethod
     def generate(cls) -> Self:
         import uuid
         return cls(value=str(uuid.uuid4()))
-    
+
     def __str__(self) -> str:
         return self.value
-    
+
     def __hash__(self) -> int:
         return hash(self.value)
 
 
 class CustomerId(BaseModel, frozen=True):
     value: str
-    
+
     def __str__(self) -> str:
         return self.value
-    
+
     def __hash__(self) -> int:
         return hash(self.value)
 ```
@@ -201,11 +202,11 @@ class OrderLine:
     product_id: str
     quantity: int
     unit_price: Money
-    
+
     @property
     def subtotal(self) -> Money:
         return self.unit_price.multiply(self.quantity)
-    
+
     def __post_init__(self) -> None:
         if self.quantity <= 0:
             raise ValueError("Quantity must be positive")
@@ -220,7 +221,7 @@ class Order:
     lines: list[OrderLine] = field(default_factory=list)
     placed_at: datetime | None = None
     _events: list["DomainEvent"] = field(default_factory=list, repr=False)
-    
+
     # Factory method
     @classmethod
     def create(cls, customer_id: CustomerId) -> "Order":
@@ -228,35 +229,35 @@ class Order:
             id=OrderId.generate(),
             customer_id=customer_id,
         )
-    
+
     # Commands
     def add_line(self, product_id: str, quantity: int, unit_price: Money) -> None:
         if self.status != OrderStatus.DRAFT:
             raise InvalidOrderStateError("Cannot modify non-draft order")
-        
+
         # Check if product already exists
         for line in self.lines:
             if line.product_id == product_id:
                 raise DuplicateProductError(f"Product {product_id} already in order")
-        
+
         self.lines.append(OrderLine(
             product_id=product_id,
             quantity=quantity,
             unit_price=unit_price,
         ))
-    
+
     def remove_line(self, product_id: str) -> None:
         if self.status != OrderStatus.DRAFT:
             raise InvalidOrderStateError("Cannot modify non-draft order")
-        
+
         self.lines = [l for l in self.lines if l.product_id != product_id]
-    
+
     def place(self) -> None:
         if self.status != OrderStatus.DRAFT:
             raise InvalidOrderStateError("Can only place draft orders")
         if not self.lines:
             raise EmptyOrderError("Cannot place order without items")
-        
+
         self.status = OrderStatus.PLACED
         self.placed_at = datetime.utcnow()
         self._events.append(OrderPlaced(
@@ -265,28 +266,28 @@ class Order:
             total=self.total,
             placed_at=self.placed_at,
         ))
-    
+
     def cancel(self, reason: str) -> None:
         if self.status in (OrderStatus.SHIPPED, OrderStatus.DELIVERED):
             raise InvalidOrderStateError("Cannot cancel shipped/delivered order")
-        
+
         self.status = OrderStatus.CANCELLED
         self._events.append(OrderCancelled(
             order_id=self.id,
             reason=reason,
         ))
-    
+
     # Queries
     @property
     def total(self) -> Money:
         if not self.lines:
             return Money.zero()
         return sum((line.subtotal for line in self.lines[1:]), self.lines[0].subtotal)
-    
+
     @property
     def item_count(self) -> int:
         return sum(line.quantity for line in self.lines)
-    
+
     # Event handling
     def collect_events(self) -> list["DomainEvent"]:
         events = self._events.copy()
@@ -369,11 +370,11 @@ from domain.model.value_objects import OrderId, CustomerId
 
 class OrderRepository(Protocol):
     """Port - Repository interface defined in domain layer."""
-    
+
     def find_by_id(self, order_id: OrderId) -> Order | None: ...
-    
+
     def save(self, order: Order) -> None: ...
-    
+
     def find_by_customer(self, customer_id: CustomerId) -> list[Order]: ...
 
 
@@ -390,12 +391,12 @@ class Base(DeclarativeBase):
 
 class OrderModel(Base):
     __tablename__ = "orders"
-    
+
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     customer_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     placed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    
+
     lines: Mapped[list["OrderLineModel"]] = relationship(
         back_populates="order",
         cascade="all, delete-orphan",
@@ -404,14 +405,14 @@ class OrderModel(Base):
 
 class OrderLineModel(Base):
     __tablename__ = "order_lines"
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
     product_id: Mapped[str] = mapped_column(String(36), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     unit_price_currency: Mapped[str] = mapped_column(String(3), nullable=False)
-    
+
     order: Mapped["OrderModel"] = relationship(back_populates="lines")
 
 
@@ -426,18 +427,18 @@ from infrastructure.persistence.models import OrderModel, OrderLineModel
 
 class SqlAlchemyOrderRepository(OrderRepository):
     """Adapter - Repository implementation."""
-    
+
     def __init__(self, session: Session):
         self._session = session
-    
+
     def find_by_id(self, order_id: OrderId) -> Order | None:
         model = self._session.get(OrderModel, str(order_id))
         return self._to_domain(model) if model else None
-    
+
     def save(self, order: Order) -> None:
         model = self._to_model(order)
         self._session.merge(model)
-    
+
     def find_by_customer(self, customer_id: CustomerId) -> list[Order]:
         models = (
             self._session.query(OrderModel)
@@ -445,7 +446,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
             .all()
         )
         return [self._to_domain(m) for m in models]
-    
+
     def _to_domain(self, model: OrderModel) -> Order:
         return Order(
             id=OrderId(value=model.id),
@@ -464,7 +465,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                 for line in model.lines
             ],
         )
-    
+
     def _to_model(self, order: Order) -> OrderModel:
         return OrderModel(
             id=str(order.id),
@@ -520,24 +521,24 @@ class PlaceOrderHandler:
     ):
         self._orders = order_repository
         self._events = event_bus
-    
+
     def handle(self, command: PlaceOrderCommand) -> str:
         order = Order.create(CustomerId(value=command.customer_id))
-        
+
         for item in command.items:
             order.add_line(
                 product_id=item.product_id,
                 quantity=item.quantity,
                 unit_price=Money(amount=item.unit_price, currency=item.currency),
             )
-        
+
         order.place()
         self._orders.save(order)
-        
+
         # Publish events after save
         for event in order.collect_events():
             self._events.publish(event)
-        
+
         return str(order.id)
 ```
 
@@ -664,36 +665,36 @@ class TestOrder:
         order = Order.create(CustomerId(value="cust-123"))
         assert order.status.value == "draft"
         assert len(order.lines) == 0
-    
+
     def test_add_line(self):
         order = Order.create(CustomerId(value="cust-123"))
         order.add_line("prod-1", 2, Money(amount=Decimal("10.00")))
-        
+
         assert len(order.lines) == 1
         assert order.total == Money(amount=Decimal("20.00"))
-    
+
     def test_place_order_emits_event(self):
         order = Order.create(CustomerId(value="cust-123"))
         order.add_line("prod-1", 1, Money(amount=Decimal("10.00")))
-        
+
         order.place()
-        
+
         events = order.collect_events()
         assert len(events) == 1
         assert isinstance(events[0], OrderPlaced)
         assert events[0].order_id == order.id
-    
+
     def test_cannot_place_empty_order(self):
         order = Order.create(CustomerId(value="cust-123"))
-        
+
         with pytest.raises(EmptyOrderError):
             order.place()
-    
+
     def test_cannot_modify_placed_order(self):
         order = Order.create(CustomerId(value="cust-123"))
         order.add_line("prod-1", 1, Money(amount=Decimal("10.00")))
         order.place()
-        
+
         with pytest.raises(InvalidOrderStateError):
             order.add_line("prod-2", 1, Money(amount=Decimal("5.00")))
 
@@ -704,10 +705,10 @@ class TestSqlAlchemyOrderRepository:
         repo = SqlAlchemyOrderRepository(session)
         order = Order.create(CustomerId(value="cust-123"))
         order.add_line("prod-1", 2, Money(amount=Decimal("10.00")))
-        
+
         repo.save(order)
         session.commit()
-        
+
         retrieved = repo.find_by_id(order.id)
         assert retrieved is not None
         assert retrieved.id == order.id

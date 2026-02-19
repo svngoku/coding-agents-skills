@@ -1,0 +1,9 @@
+[tool.pyright]
+# These scripts run on HF Jobs where GPU dependencies are pre-installed.
+# Suppress false-positive import errors for runtime-only dependencies.
+reportMissingImports = "none"
+
+# sys.stdout.reconfigure() exists at runtime (CPython 3.7+) but pyright
+# does not model it on the declared type of sys.stdout (TextIO).
+reportAttributeAccessIssue = "none"
+reportGeneralTypeIssues = "none"

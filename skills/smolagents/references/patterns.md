@@ -18,7 +18,7 @@ doc_embeddings = embedder.encode(documents)
 def retriever(query: str, top_k: int = 3) -> str:
     """
     Retrieves relevant documents from the knowledge base.
-    
+
     Args:
         query: Search query to find relevant documents.
         top_k: Number of documents to return.
@@ -51,7 +51,7 @@ collection = client.get_or_create_collection("docs")
 def search_knowledge_base(query: str, n_results: int = 5) -> str:
     """
     Search the knowledge base for relevant information.
-    
+
     Args:
         query: Natural language search query.
         n_results: Number of results to return.
@@ -86,10 +86,10 @@ def execute_sql(query: str) -> str:
     f"""
     Execute SQL queries on the database.
     Returns query results as a string.
-    
+
     Available tables and columns:
     {schema_description}
-    
+
     Args:
         query: SQL query to execute. Use SELECT for data retrieval.
     """
@@ -130,7 +130,7 @@ from time import sleep
 def navigate_to(url: str) -> str:
     """
     Navigate to a URL.
-    
+
     Args:
         url: The URL to navigate to.
     """
@@ -141,7 +141,7 @@ def navigate_to(url: str) -> str:
 def click_element(text: str) -> str:
     """
     Click on an element containing the specified text.
-    
+
     Args:
         text: Text content of the element to click.
     """
@@ -152,7 +152,7 @@ def click_element(text: str) -> str:
 def type_text(text: str, into: str = None) -> str:
     """
     Type text, optionally into a specific field.
-    
+
     Args:
         text: Text to type.
         into: Optional field name/placeholder to type into.
@@ -182,7 +182,7 @@ def capture_screenshot(memory_step: ActionStep, agent: CodeAgent) -> None:
     png_bytes = driver.get_screenshot_as_png()
     image = Image.open(BytesIO(png_bytes))
     memory_step.observations_images = [image.copy()]
-    
+
     # Remove old screenshots to save tokens
     for step in agent.memory.steps:
         if isinstance(step, ActionStep) and step.step_number < memory_step.step_number - 1:
@@ -227,7 +227,7 @@ from smolagents import tool
 def analyze_data(data: str) -> str:
     """
     Analyzes data and provides insights.
-    
+
     Args:
         data: Data to analyze as text.
     """
@@ -237,7 +237,7 @@ def analyze_data(data: str) -> str:
 analyst = CodeAgent(
     tools=[analyze_data],
     model=model,
-    name="analyst", 
+    name="analyst",
     description="Analyzes data and provides insights. Give it data to analyze."
 )
 
@@ -307,9 +307,9 @@ def review_plan(memory_step, agent):
         print("PROPOSED PLAN:")
         print(memory_step.plan)
         print("="*50)
-        
+
         response = input("\nApprove plan? (y/n/modify): ").strip().lower()
-        
+
         if response == 'n':
             raise KeyboardInterrupt("Plan rejected by user")
         elif response == 'modify':
@@ -335,7 +335,7 @@ def approve_step(memory_step: ActionStep, agent):
     if memory_step.action_output:
         print(f"\nStep {memory_step.step_number} wants to execute:")
         print(memory_step.action_output)
-        
+
         if input("Approve? (y/n): ").lower() != 'y':
             memory_step.error = "User rejected this action"
             raise KeyboardInterrupt("Action rejected")
@@ -355,16 +355,16 @@ from smolagents import CodeAgent, InferenceClientModel
 
 async def run_multiple_agents():
     model = InferenceClientModel()
-    
+
     agent1 = CodeAgent(tools=[], model=model)
     agent2 = CodeAgent(tools=[], model=model)
-    
+
     # Run agents concurrently
     results = await asyncio.gather(
         asyncio.to_thread(agent1.run, "Task 1"),
         asyncio.to_thread(agent2.run, "Task 2")
     )
-    
+
     return results
 
 # Run
