@@ -1,13 +1,14 @@
 # Coding Agents Skills
 
-> A curated collection of specialized skills for AI coding agents, designed to enhance agent capabilities across software development, architecture, and framework integration.
+> A curated collection of specialized skills for AI coding agents, designed to enhance agent capabilities across software development, architecture, deployment, and framework integration.
 
 ## 📖 Overview
 
 This repository provides production-ready skill modules for AI coding agents, enabling them to:
 - Apply software design patterns and architectural principles
-- Work with modern AI frameworks and tools
-- Follow best practices in code generation and refactoring
+- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk)
+- Deploy and operate applications on cloud platforms (Scalingo)
+- Follow best practices in code generation, refactoring, and UI development
 - Integrate seamlessly with development workflows
 
 Each skill is self-contained with comprehensive documentation, reference materials, and practical examples.
@@ -17,6 +18,12 @@ Each skill is self-contained with comprehensive documentation, reference materia
 ```
 coding-agents-skills/
 ├── skills/
+│   ├── adaption-ai/                    # Adaption AI SDK for synthetic data augmentation
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── api-reference.md
+│   │       └── guides.md
+│   │
 │   ├── ddd/                          # Domain-Driven Design
 │   │   ├── SKILL.md                  # Core skill definition
 │   │   └── references/               # Reference documentation
@@ -28,13 +35,41 @@ coding-agents-skills/
 │   │       ├── typescript-patterns.md
 │   │       └── code-review.md
 │   │
+│   ├── genai-tk-skill/               # GenAI Toolkit (YAML-driven agent framework)
+│   │   ├── SKILL.md
+│   │   ├── AGENTS.md
+│   │   └── references/
+│   │       ├── agents.md
+│   │       ├── baml-structured.md
+│   │       ├── cli-and-init.md
+│   │       ├── configuration.md
+│   │       └── rag.md
+│   │
 │   ├── langchain/                    # LangChain framework
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │
-│   └── smolagents/                   # Hugging Face SmolAgents
+│   ├── scalingo/                      # Scalingo European PaaS deployment
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── addons-databases.md
+│   │       ├── buildpacks.md
+│   │       ├── cli-reference.md
+│   │       ├── deployment.md
+│   │       ├── manifest-review-apps.md
+│   │       ├── scaling-autoscaler.md
+│   │       └── terraform-iac.md
+│   │
+│   ├── smolagents/                   # Hugging Face SmolAgents
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │
+│   ├── ui/                           # UI/UX best practices for agent-built interfaces
+│   │   └── SKILL.md
+│   │
+│   └── unsloth-hf-jobs/              # Unsloth fine-tuning on Hugging Face Jobs
 │       ├── SKILL.md
-│       └── references/
+│       └── scripts/
 │
 └── README.md
 ```
@@ -67,7 +102,7 @@ coding-agents-skills/
 ### 2. LangChain
 **Status:** ✅ Complete
 
-**Description:** Build AI applications with LangChain framework.
+**Description:** Build AI applications with the LangChain framework.
 
 **Capabilities:**
 - Chain construction and composition
@@ -92,6 +127,110 @@ coding-agents-skills/
 - Model configuration (HF Inference, LiteLLM, Transformers, Ollama)
 - Agentic RAG and text-to-SQL pipelines
 - Web browsing agents
+
+---
+
+### 4. Adaption AI SDK
+**Status:** ✅ Complete
+
+**Description:** Build dataset augmentation pipelines with Adaption's Adaptive Data platform for synthetic data generation and fine-tuning preparation.
+
+**Capabilities:**
+- Upload and import datasets (local files, Hugging Face, Kaggle)
+- Run augmentation/adaptation jobs with brand controls and recipe specifications
+- Hallucination mitigation via web-search grounding
+- DPO preference pair generation and deduplication
+- Quality evaluation and export via presigned URLs
+- Async client support with exponential backoff polling
+
+**Use Cases:**
+- Synthetic data generation for fine-tuning
+- Dataset augmentation pipelines
+- Grounding-based hallucination reduction on training data
+
+---
+
+### 5. genai-tk — GenAI & Agentic Toolkit
+**Status:** ✅ Complete
+
+**Description:** YAML-driven wrapper over LangChain, LangGraph, and 100+ LLM providers. Inversion-of-control layer where profiles in YAML drive factories that produce LangChain runtime objects.
+
+**Capabilities:**
+- `model_id@provider` LLM and embeddings factories
+- Four bundled agent frameworks (ReAct, Deep, Deer-flow, SmolAgents)
+- Unified `LangchainAgent` entry point with profile-based configuration
+- `RetrieverFactory` with six retriever types (vector, BM25, ensemble, reranked, pg_hybrid, zero_entropy)
+- BAML structured extraction
+- OpenSandbox Docker integration for secure code execution
+- MCP server registry and SkillsMiddleware for on-demand domain knowledge
+- CLI scaffolding with `cli init`
+
+**Use Cases:**
+- Building production-grade agent systems with YAML configuration
+- Multi-step planning with Deep agents and sandboxed execution
+- Deep web research with Deer-flow
+- Code-first automation with SmolAgents
+
+---
+
+### 6. Scalingo
+**Status:** ✅ Complete
+
+**Description:** Deploy and operate web applications on Scalingo, a European (French) Platform-as-a-Service with Heroku-compatible buildpacks and sovereign cloud regions.
+
+**Capabilities:**
+- App creation, deployment, and scaling via CLI and git
+- Managed database addons (PostgreSQL, MySQL, MongoDB, Redis, OpenSearch, InfluxDB)
+- Horizontal and vertical container scaling with autoscaler support
+- `scalingo.json` manifest and review app configuration
+- Terraform Infrastructure-as-Code provider
+- SecNumCloud-qualified region (`osc-secnum-fr1`) for French public-sector workloads
+- Migration guidance from Heroku
+
+**Use Cases:**
+- Deploying web apps to a European sovereign PaaS
+- Managing production databases and background workers
+- Automating infrastructure with Terraform
+- Meeting French public-sector compliance requirements (HDS, SecNumCloud)
+
+---
+
+### 7. UI Skills
+**Status:** ✅ Complete
+
+**Description:** Opinionated constraints for building better interfaces with agents. Ensures accessibility, performance, and consistent design quality in AI-generated UI code.
+
+**Capabilities:**
+- Tailwind CSS and motion/react animation guidelines
+- Accessible component primitives (Base UI, React Aria, Radix)
+- Interaction best practices (AlertDialog for destructive actions, structural skeletons for loading)
+- Animation constraints (compositor-only props, 200ms limit, reduced-motion support)
+- Typography and layout rules (text-balance, tabular-nums, z-index scale)
+- Performance guidelines (no large blur, no will-change outside animations)
+
+**Use Cases:**
+- Reviewing agent-generated UI for quality and accessibility
+- Ensuring consistent Tailwind CSS usage
+- Preventing common AI-generated UI anti-patterns
+
+---
+
+### 8. Unsloth Training on HF Jobs
+**Status:** ✅ Complete
+
+**Description:** Fine-tune LLMs and VLMs using Unsloth on Hugging Face on-demand cloud GPUs with UV scripts.
+
+**Capabilities:**
+- VLM fine-tuning (Qwen3-VL, Gemma 3) with image + message datasets
+- Continued pretraining and domain adaptation
+- LoRA fine-tuning with configurable rank and learning rate
+- Trackio monitoring integration
+- Automated dependency management via UV scripts
+
+**Use Cases:**
+- Fine-tuning vision-language models on custom datasets
+- Domain adaptation with continued pretraining
+- Running GPU training jobs without local hardware
 
 ---
 
@@ -166,11 +305,12 @@ Each skill follows a consistent structure:
 
 ### SKILL.md Format
 ```markdown
-# Skill Name
+---
+name: skill-name
+description: Detailed description of when and how to use this skill
+---
 
-| name | description |
-|------|-------------|
-| skill-name | Detailed description of when and how to use this skill |
+# Skill Name
 
 ## Overview
 [Brief introduction]
@@ -192,7 +332,7 @@ Each skill follows a consistent structure:
 ```
 
 ### References Structure
-- Each skill has a `references/` directory
+- Each skill has a `references/` directory (when applicable)
 - Reference files are in Markdown format
 - Cover specific aspects of the skill in depth
 - Include code examples in relevant languages
@@ -204,8 +344,8 @@ Contributions are welcome! To add a new skill:
 1. **Fork the repository**
 2. **Create a new skill directory** under `skills/`
 3. **Follow the skill template:**
-   - Create `SKILL.md` with the standard structure
-   - Add `references/` directory with detailed documentation
+   - Create `SKILL.md` with the standard structure (including YAML frontmatter with `name` and `description`)
+   - Add `references/` directory with detailed documentation when needed
    - Include practical examples and code samples
 4. **Submit a pull request**
 
@@ -215,12 +355,18 @@ Contributions are welcome! To add a new skill:
 - Provide language-specific implementations where relevant
 - Document anti-patterns and common mistakes
 - Keep reference files modular and cross-referenced
+- Use YAML frontmatter with `name` and `description` for machine readability
 
 ## 📚 Roadmap
 
 - [x] Domain-Driven Design skill
 - [x] SmolAgents skill
-- [ ] LangChain skill (in progress)
+- [x] LangChain skill
+- [x] Adaption AI SDK skill
+- [x] genai-tk skill
+- [x] Scalingo deployment skill
+- [x] UI best practices skill
+- [x] Unsloth fine-tuning skill
 - [ ] Testing patterns skill
 - [ ] API design skill
 - [ ] Database design skill
@@ -232,7 +378,11 @@ Contributions are welcome! To add a new skill:
 
 - [Hugging Face SmolAgents](https://github.com/huggingface/smolagents) - Minimalist AI agent framework
 - [LangChain](https://github.com/langchain-ai/langchain) - Building applications with LLMs
+- [genai-tk](https://github.com/tclatos/genai-tk) - YAML-driven GenAI toolkit
 - [Model Context Protocol](https://modelcontextprotocol.io/) - Standard for connecting AI systems
+- [Scalingo](https://scalingo.com/) - European Platform-as-a-Service
+- [Unsloth](https://github.com/unslothai/unsloth) - Fast LLM fine-tuning
+- [Adaption](https://docs.adaptionlabs.ai/) - Synthetic data augmentation platform
 
 ## 📄 License
 
