@@ -1,0 +1,9 @@
+# Local skillgrade evaluation output (scripts/run-evals.sh)
+.evals/
+
+# Python artifacts (eval graders)
+__pycache__/
+*.pyc
+
+# OS noise
+.DS_Store

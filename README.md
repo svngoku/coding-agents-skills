@@ -131,7 +131,12 @@ coding-agents-skills/
 │
 ├── README.md
 ├── AGENTS.md
-└── LICENSE
+├── LICENSE
+├── docs/
+│   └── eval-guidelines.md           # skillgrade eval conventions & coverage
+├── scripts/
+│   └── run-evals.sh                 # local eval runner (no CI)
+└── .gitignore                       # ignores .evals/ output
 ```
 
 ## 🎯 Available Skills
@@ -563,15 +568,39 @@ description: Detailed description of when and how to use this skill
 
 ## 🧪 Evaluating Skills
 
-The `adaption-ai` skill ships with a [skillgrade](https://github.com/mgechev/skillgrade#readme) evaluation harness (`eval.yaml`) that measures how well an agent applies the skill end-to-end:
+Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#readme) — "unit tests for your agent skills". A real coding agent runs a task against the skill, and its output is scored by a **deterministic grader** (static API-surface checks) plus an **LLM rubric** (approach quality). The repo standardizes on the **code-generation archetype** (deterministic 0.7 / rubric 0.3), so evaluations are fast and hermetic — no live services required.
+
+### Coverage
+
+| Skill | Harness | Status |
+|-------|---------|--------|
+| adaption-ai | ✅ `eval.yaml` | ready |
+| langchain | ✅ `eval.yaml` | ready |
+| smolagents | ✅ `eval.yaml` | ready |
+| genai-tk | ✅ `eval.yaml` | ready |
+| unsloth-hf-jobs | ✅ `eval.yaml` | ready |
+| database-design | ✅ `eval.yaml` | ready |
+| api-design | ⏳ planned | — |
+| security-best-practices | ⏳ planned | — |
+| testing-patterns | ⏳ planned | — |
+| performance-optimization | ⏳ planned | — |
+| ddd | ⏳ planned | — |
+| microservices-patterns | ⏳ planned | — |
+| ui | ⏳ planned | — |
+| scalingo | ⏳ planned | — |
+
+### Running locally (no CI)
 
 ```bash
-cd skills/adaption-ai
-skillgrade            # Run all tasks
-skillgrade --validate # Verify graders using reference solutions
+npm i -g skillgrade
+
+./scripts/run-evals.sh                  # smoke-test every skill with an eval.yaml
+./scripts/run-evals.sh langchain        # one skill
+./scripts/run-evals.sh --mode=reliable  # 15 trials (regression: 30)
+./scripts/run-evals.sh --validate       # verify graders against reference solutions
 ```
 
-The harness runs an agent against a concrete pipeline-building task, checks the resulting code against a deterministic grader (key API surface), and scores it with an LLM rubric. Skills with an `eval.yaml` are marked in the tree above.
+Reports land in `.evals/<skill>/` (gitignored); `--ci` fails the run when a skill drops below its threshold. See [docs/eval-guidelines.md](docs/eval-guidelines.md) for the layout convention and authoring rules.
 
 ## 🤝 Contributing
 
