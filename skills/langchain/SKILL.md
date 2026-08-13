@@ -228,6 +228,30 @@ result = agent.invoke(
 )
 ```
 
+## Anti-Patterns to Avoid
+
+- **Tools without type hints or docstrings** — the docstring *is* the tool description the model sees; a missing or vague one means the agent misuses the tool
+- **Global state in tools** — tools that read globals instead of `ToolRuntime[Context]` are untestable and unsafe in concurrent runs
+- **No checkpointer, then wondering why the agent forgets** — multi-turn agents need `checkpointer=InMemorySaver()` (or a persistent saver) plus a stable `thread_id`
+- **Rebuilding everything as one giant system prompt** — tools, structured output (`ToolStrategy`/`with_structured_output`), and retrieval exist to keep prompts small
+- **Letting raw tool exceptions reach the model** — wrap tools, catch, and return structured error strings so the agent can recover
+- **Using deprecated `LLMChain`/`SequentialChain` APIs** — current LangChain builds on `create_agent` and LangGraph; the old chains are removed from recent versions
+- **Stuffing whole documents into context** — use the retrieval patterns in [retrieval.md](references/retrieval.md) instead of naive full-document injection
+
+## When to Use / Not Use
+
+**Use this skill when:**
+
+- Building agents with LangChain or LangGraph (Python or TypeScript)
+- Wiring tools, memory, MCP servers, or structured output into an LLM app
+- Implementing RAG, multi-agent handoffs, routers, or stateful workflows
+
+**Do NOT use this skill when:**
+
+- A single stateless LLM call is all you need — the plain provider SDK is lighter
+- The project standardizes on another agent framework (e.g., smolagents) — follow the project's stack
+- The agent is code-first and benefits from the smaller SmolAgents execution model — see the smolagents skill
+
 ## References
 
 For detailed patterns, see:

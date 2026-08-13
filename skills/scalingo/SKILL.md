@@ -306,3 +306,19 @@ Certification applies to the platform; your application's data handling is still
 ---
 
 When working on a Scalingo task, check the relevant reference before answering from memory — addon plan names, Terraform resource schemas, and autoscaler metric names change over time, and the references carry the current specifics.
+
+## When to Use / Not Use
+
+**Use this skill when:**
+
+- Deploying or operating an app on Scalingo (git push, GitHub/GitLab integration, archives)
+- Provisioning managed addons (PostgreSQL, MySQL, MongoDB, Redis, OpenSearch, InfluxDB)
+- Scaling containers, configuring the autoscaler, or setting up review apps / `scalingo.json`
+- Managing infrastructure with the Scalingo Terraform provider
+- Migrating from Heroku or targeting French compliance (HDS, SecNumCloud `osc-secnum-fr1`)
+
+**Do NOT use this skill when:**
+
+- Deploying to a different platform — Vercel, Railway, or plain Kubernetes are out of scope
+- The task is purely local development with no deployment component
+- The user wants a generic Docker orchestration answer that isn't Scalingo-specific — prefer the platform they're actually on

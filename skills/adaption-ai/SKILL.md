@@ -143,3 +143,25 @@ url = client.datasets.download(dataset_id)  # presigned S3 URL
 - **Poll after HF/Kaggle import**: ingestion is async; wait for `row_count is not None`
 - **Evaluation lags adaptation**: run may show `succeeded` before eval finishes — poll `get_evaluation` separately
 - **Combine controls freely**: `brand_controls` + `recipe_specification` + `job_specification` all compose on one `datasets.run()` call
+
+## Anti-Patterns to Avoid
+
+- **Running a real job without estimating first** — on large datasets, always call with `estimate=True` and check `estimated_credits_consumed` before spending budget
+- **Reading results right after HF/Kaggle import** — ingestion is async; wait until `row_count is not None` before running a job, or you'll process an empty dataset
+- **Treating run completion as evaluation completion** — the run can show `succeeded` while the evaluation is still `running`; poll `get_evaluation` separately
+- **Retrying without an `idempotency_key`** — naive retries on network errors create duplicate jobs; set `job_specification.idempotency_key`
+- **Missing the `prompt` key in `column_mapping`** — it is required; jobs fail with confusing errors when the mapping is incomplete
+
+## When to Use / Not Use
+
+**Use this skill when:**
+
+- Generating synthetic training data or augmenting existing datasets for fine-tuning
+- Building DPO preference pairs, reasoning traces, or grounded (hallucination-mitigated) training data
+- Working with the Adaption Python SDK (`pip install adaption`) or the adaptionlabs.ai API
+
+**Do NOT use this skill when:**
+
+- The data only needs simple cleaning/formatting — a local pipeline is cheaper
+- The work must stay fully on-premises with no external platform dependency
+- You are not using Adaption's platform — use the generic dataset pipelines of the framework you're already on

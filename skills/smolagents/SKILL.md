@@ -558,6 +558,30 @@ agent.run("Your task")
 7. **Use ToolCallingAgent** when code execution isn't needed
 8. **Specialize agents** in multi-agent systems
 
+## Anti-Patterns to Avoid
+
+- **CodeAgent when code execution isn't needed** — prefer `ToolCallingAgent` (JSON tool calls, no code execution) for lower risk and cost
+- **Running untrusted code locally** — production agents must run in E2B, Docker, or Blaxel; `local` mode executes arbitrary Python in your process
+- **Authorizing too much or too little** — `additional_authorized_imports` is a security boundary; authorize only what the task needs, never everything
+- **Unbounded `max_steps`** — a runaway agent burns tokens and time; set 10–20 steps and use `planning_interval` for complex tasks
+- **Rebuilding built-in tools** — `web_search`, `visit_webpage`, `python_executer`, and `final_answer` exist; check [tools.md](references/tools.md) before writing custom ones
+- **Silent debugging** — set `verbosity_level=2` during development and telemetry in production; you cannot debug a black box
+- **One giant agent for everything** — split responsibilities across specialized agents in a multi-agent system ([patterns.md](references/patterns.md))
+
+## When to Use / Not Use
+
+**Use this skill when:**
+
+- Building code-executing or tool-calling agents with SmolAgents
+- Implementing agentic RAG, text-to-SQL, web browsing agents, or multi-agent systems
+- Needing secure code execution (E2B, Docker, Blaxel) with HF Inference, LiteLLM, or local models
+
+**Do NOT use this skill when:**
+
+- The task is a plain LLM call or prompt pipeline with no tools
+- You need LangChain/LangGraph ecosystem integrations — use the langchain skill instead
+- The workload is heavy on retrieval infrastructure where the langchain RAG reference is a better fit
+
 ## Additional Resources
 
 - **Documentation**: https://huggingface.co/docs/smolagents

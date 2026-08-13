@@ -103,6 +103,30 @@ Add `--trackio-space <username>/trackio` to any command for live monitoring.
 - First step may take minutes (CUDA kernel compilation)
 - View script options: `uv run <script-url> --help`
 
+## Anti-Patterns to Avoid
+
+- **Skipping the smoke test** — always verify setup with `--max-steps 10` before a full run; config errors cost GPU hours
+- **Wrong data format for VLMs** — VLM fine-tuning requires `images` + `messages` columns with image + text content parts; plain text datasets silently fail or train nonsense
+- **Forgetting `--secrets HF_TOKEN`** — the job fails at model download/login; pass the secret explicitly
+- **Batch size 1 without gradient accumulation** — on A100 with 4-bit LoRA you can afford larger batches; accumulation of 1 wastes throughput
+- **Uploading only the adapter when you need a merged model** — set `--merge-model` if the target is deployment, not another fine-tuning pass
+- **Training without `--eval-split`** — you cannot detect overfitting or pick a checkpoint without a held-out split
+- **Ignoring `--streaming` on huge datasets** — disk may fill up; stream when the dataset doesn't fit locally
+
+## When to Use / Not Use
+
+**Use this skill when:**
+
+- Fine-tuning LLMs or VLMs with Unsloth on HF on-demand cloud GPUs
+- Doing LoRA/QLoRA fine-tuning, continued pretraining, or domain adaptation via UV scripts
+- You have no local GPU or want ephemeral, pay-per-hour training
+
+**Do NOT use this skill when:**
+
+- You have local GPUs and prefer on-premises training — use the unsloth skill directly
+- The model works with prompting/RAG and doesn't need fine-tuning at all
+- You need full control over a custom training stack (TRL, custom loops) — this skill is scoped to the provided UV scripts
+
 ## Resources
 
 - [HF Jobs Quickstart](https://huggingface.co/docs/hub/jobs-quickstart)
