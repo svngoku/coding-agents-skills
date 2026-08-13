@@ -16,10 +16,13 @@ coding-agents-skills/
 │   ├── <skill-name>/          # One directory per skill
 │   │   ├── SKILL.md           # REQUIRED — core skill definition
 │   │   ├── references/        # OPTIONAL — deep-dive docs
+│   │   ├── scripts/           # OPTIONAL — runnable example scripts
+│   │   ├── eval.yaml          # OPTIONAL — skillgrade evaluation harness
 │   │   └── AGENTS.md          # OPTIONAL — skill-specific agent notes
 │   └── ...
 ├── README.md                  # REQUIRED — human-facing overview
-└── AGENTS.md                  # THIS FILE
+├── AGENTS.md                  # THIS FILE
+└── LICENSE                    # REQUIRED — MIT
 ```
 
 ## Skill Conventions

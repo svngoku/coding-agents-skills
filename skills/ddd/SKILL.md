@@ -1,5 +1,5 @@
 ---
-name: domain-driven-design
+name: ddd
 description: Domain-Driven Design system for software development. Use when designing new systems with DDD principles, refactoring existing codebases toward DDD, generating code scaffolding (entities, aggregates, repositories, domain events), facilitating Event Storming sessions, creating bounded context maps, or performing code reviews with a DDD lens. Covers both strategic design (bounded contexts, subdomains, context maps, ubiquitous language) and tactical design (entities, value objects, aggregates, domain services, repositories). Supports all major architecture patterns (Hexagonal/Ports & Adapters, CQRS, Event Sourcing, Clean Architecture) with language-agnostic guidance and concrete examples in Python and TypeScript.
 ---
 

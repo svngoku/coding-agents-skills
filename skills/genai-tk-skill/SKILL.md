@@ -13,13 +13,15 @@ The mental model:
 config/*.yaml ──► global_config() ──► Factory ──► LangChain object ──► your code
 ```
 
-Read the references on demand:
+## Quick Reference
 
-- `references/agents.md` — ReAct, Deep, Deer-flow, SmolAgents, sandboxes, MCP, skills
-- `references/rag.md` — `RetrieverFactory`, `ManagedRetriever`, the six retriever types, ingestion
-- `references/configuration.md` — `global_config()`, `app_conf.yaml`, `:merge`, environments, `model_id@provider`
-- `references/cli-and-init.md` — `cli init`, command groups, extending the CLI with `CliTopCommand`
-- `references/baml-structured.md` — BAML structured extraction with `BamlStructuredProcessor`
+| Topic | Reference |
+|-------|-----------|
+| Agent frameworks: ReAct, Deep, Deer-flow, SmolAgents — profiles, tools, middleware, MCP, sandbox, skills | [agents.md](references/agents.md) |
+| RAG: `RetrieverFactory`, `ManagedRetriever`, the six retriever types, ingestion | [rag.md](references/rag.md) |
+| Configuration: `global_config()`, `app_conf.yaml`, `:merge`, environments, `model_id@provider` | [configuration.md](references/configuration.md) |
+| CLI: `cli init`, command groups, extending the CLI with `CliTopCommand` | [cli-and-init.md](references/cli-and-init.md) |
+| BAML structured extraction with `BamlStructuredProcessor` | [baml-structured.md](references/baml-structured.md) |
 
 ## Installation
 
@@ -47,7 +49,7 @@ uv run cli init --deer-flow               # also clone Deer-flow backend
 uv sync
 ```
 
-`cli init` creates `config/`, `Makefile`, a Python package with example CLI commands and an LCEL chain, an `AGENTS.md`, and `.github/copilot-instructions.md`. See `references/cli-and-init.md` for the full file inventory.
+`cli init` creates `config/`, `Makefile`, a Python package with example CLI commands and an LCEL chain, an `AGENTS.md`, and `.github/copilot-instructions.md`. See [cli-and-init.md](references/cli-and-init.md) for the full file inventory.
 
 API keys go in `.env` at the project root (auto-loaded):
 
@@ -159,7 +161,7 @@ cli agents deerflow --chat                                # Deer-flow
 cli agents smolagents --executor docker "..."             # code-first
 ```
 
-For the full agent reference — type semantics, middlewares, tool specs, MCP wiring, sandbox setup, skill loading — read `references/agents.md`.
+For the full agent reference — type semantics, middlewares, tool specs, MCP wiring, sandbox setup, skill loading — read [agents.md](references/agents.md).
 
 ### 3. RAG — `RetrieverFactory` + `ManagedRetriever`
 
@@ -220,7 +222,7 @@ cli rag add-files my_vec ./docs/                              # ingest
 cli rag query my_vec "What does the doc say about X?"
 ```
 
-For the full RAG reference — every retriever type's full schema, the document store separation, ingestion semantics, PgHybrid setup, and using retrievers as agent tools — read `references/rag.md`.
+For the full RAG reference — every retriever type's full schema, the document store separation, ingestion semantics, PgHybrid setup, and using retrievers as agent tools — read [rag.md](references/rag.md).
 
 ### 4. Configuration — `global_config()` + `app_conf.yaml`
 
@@ -258,20 +260,20 @@ paths:
 
 Switch named environments without touching code: `BLUEPRINT_CONFIG=production` (env var) or `cfg.select_config("production")` (Python). Env vars in `${oc.env:VAR,default}` come from `.env`.
 
-For the full configuration reference — directive semantics, override patterns, computed paths, environment switching — read `references/configuration.md`.
+For the full configuration reference — directive semantics, override patterns, computed paths, environment switching — read [configuration.md](references/configuration.md).
 
 ## When to use what — a decision guide
 
 | You want to… | Reach for | Doc |
 |--------------|-----------|-----|
 | Call an LLM with a one-line config swap | `get_llm("alias@provider")` | `core.md` (in repo) |
-| Build a tool-using agent | `LangchainAgent("ProfileName")` (`type: react`) | `references/agents.md` |
-| Plan + delegate to subagents | `type: deep` profile + Docker sandbox | `references/agents.md` |
-| Do deep web research with reports | `cli agents deerflow` | `references/agents.md` |
-| Code execution / data analysis agent | `cli agents smolagents --executor docker` | `references/agents.md` |
-| Build a RAG system | `RetrieverFactory.create()` with a `vector` or `ensemble` retriever | `references/rag.md` |
-| Get strict typed output from an LLM | BAML + `BamlStructuredProcessor` | `references/baml-structured.md` |
-| Add a CLI command to your project | Subclass `CliTopCommand`, register in `app_conf.yaml` | `references/cli-and-init.md` |
+| Build a tool-using agent | `LangchainAgent("ProfileName")` (`type: react`) | [agents.md](references/agents.md) |
+| Plan + delegate to subagents | `type: deep` profile + Docker sandbox | [agents.md](references/agents.md) |
+| Do deep web research with reports | `cli agents deerflow` | [agents.md](references/agents.md) |
+| Code execution / data analysis agent | `cli agents smolagents --executor docker` | [agents.md](references/agents.md) |
+| Build a RAG system | `RetrieverFactory.create()` with a `vector` or `ensemble` retriever | [rag.md](references/rag.md) |
+| Get strict typed output from an LLM | BAML + `BamlStructuredProcessor` | [baml-structured.md](references/baml-structured.md) |
+| Add a CLI command to your project | Subclass `CliTopCommand`, register in `app_conf.yaml` | [cli-and-init.md](references/cli-and-init.md) |
 | Anonymise PII before sending to LLM | `AnonymizationMiddleware` (Presidio + Faker) | repo: `docs/middleware-pii-and-routing.md` |
 | Run untrusted code | `--sandbox docker` (uses OpenSandbox) | repo: `docs/sandbox_support.md` |
 
@@ -306,3 +308,29 @@ When generating code that lives inside a genai-tk project, follow the project's 
 **Skills are loaded on demand, not injected into every prompt.** This is the project's preferred pattern for domain knowledge — write a `SKILL.md`, point an agent profile at the directory, and `SkillsMiddleware` lets the agent read them only when relevant. This is genuinely different from "stuffing the system prompt" and worth using.
 
 **`get_llm` accepts deprecated `llm_id`/`llm_tag` kwargs that warn — use `llm=` instead.** The same applies to `get_embeddings(embeddings=...)`.
+
+## Anti-Patterns to Avoid
+
+- **Hard-coding agents/LLMs in Python instead of YAML** — the toolkit's whole point is profile-driven config; adding an agent means adding a profile, not a Python class
+- **Bare model names instead of `model_id@provider`** — fuzzy lookup is slower and can resolve unpredictably; declare aliases in `llm.yaml` and use the canonical identifier
+- **Stuffing the system prompt with domain knowledge** — write `SKILL.md` files and point profiles at them; `SkillsMiddleware` loads them on demand
+- **`type: deep` without `deepagents` installed** — deep agents need the extra package; ad-hoc agents default to `react`
+- **Running untrusted code without the Docker sandbox** — `--sandbox docker` (OpenSandbox) is the isolation boundary; `local` executes in your process
+- **Putting per-environment overrides in tracked config files** — `overrides.yaml` is merged last and git-ignored; that's where environment tweaks belong
+- **Skipping the OpenSandbox warm-up** — `cli sandbox start && cli sandbox pull` once per boot cuts container startup from ~28s to ~5s
+- **Using deprecated `llm_id`/`llm_tag` kwargs** — they warn; use `llm=` / `embeddings=` instead
+
+## When to Use / Not Use
+
+**Use this skill when:**
+
+- Building genai-tk projects: YAML-driven agents, retrievers, LLM factories
+- Writing `config/*.yaml` profiles (langchain.yaml, deerflow.yaml, llm.yaml, retrievers.yaml)
+- Wiring RAG (`RetrieverFactory`), MCP servers, sandboxes, or BAML structured extraction
+- Scaffolding with `cli init` or extending the CLI with `CliTopCommand`
+
+**Do NOT use this skill when:**
+
+- The project uses plain LangChain/LangGraph without the genai-tk layer — use the langchain skill
+- You need a quick single agent and don't want the config-first machinery — smolagents or langchain skills fit better
+- The user is asking about a different agent framework entirely
