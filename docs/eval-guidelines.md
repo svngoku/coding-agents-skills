@@ -113,11 +113,11 @@ when a skill drops below its `threshold`.
 | genai-tk | ✅ | code-gen | ready |
 | unsloth-hf-jobs | ✅ | code-gen | ready |
 | database-design | ✅ | code-gen | ready |
-| api-design | ⏳ planned | artifact (OpenAPI parse) | — |
-| security-best-practices | ⏳ planned | fix/review (vulnerable fixture) | — |
-| testing-patterns | ⏳ planned | runnable tests | — |
-| performance-optimization | ⏳ planned | fix/review | — |
-| ddd | ⏳ planned | artifact (context map) | — |
-| microservices-patterns | ⏳ planned | artifact (diagram + design) | — |
-| ui | ⏳ planned | artifact (component) | — |
-| scalingo | ⏳ planned | artifact (manifest/commands) | — |
+| api-design | ✅ | code-gen | ready |
+| security-best-practices | ✅ | code-gen | ready |
+| testing-patterns | ✅ | code-gen | ready |
+| performance-optimization | ✅ | code-gen | ready |
+| ddd | ✅ | code-gen | ready |
+| microservices-patterns | ✅ | code-gen | ready |
+| ui | ✅ | code-gen | ready |
+| scalingo | ✅ | code-gen | ready |

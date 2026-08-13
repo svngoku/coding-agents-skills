@@ -580,14 +580,14 @@ Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#rea
 | genai-tk | ✅ `eval.yaml` | ready |
 | unsloth-hf-jobs | ✅ `eval.yaml` | ready |
 | database-design | ✅ `eval.yaml` | ready |
-| api-design | ⏳ planned | — |
-| security-best-practices | ⏳ planned | — |
-| testing-patterns | ⏳ planned | — |
-| performance-optimization | ⏳ planned | — |
-| ddd | ⏳ planned | — |
-| microservices-patterns | ⏳ planned | — |
-| ui | ⏳ planned | — |
-| scalingo | ⏳ planned | — |
+| api-design | ✅ `eval.yaml` | ready |
+| security-best-practices | ✅ `eval.yaml` | ready |
+| testing-patterns | ✅ `eval.yaml` | ready |
+| performance-optimization | ✅ `eval.yaml` | ready |
+| ddd | ✅ `eval.yaml` | ready |
+| microservices-patterns | ✅ `eval.yaml` | ready |
+| ui | ✅ `eval.yaml` | ready |
+| scalingo | ✅ `eval.yaml` | ready |
 
 ### Running locally (no CI)
 
