@@ -1,0 +1,29 @@
+# skillgrade evaluation for the database-design skill.
+# Usage:
+#   skillgrade              Run all tasks
+#   skillgrade --validate   Verify graders using the reference solution
+#   skillgrade --preview    Open web UI for results
+#
+# Documentation: https://github.com/mgechev/skillgrade#readme
+
+version: "1"
+
+defaults:
+  agent: command          # opencode via 'command' (matches the user's setup)
+  command: opencode run
+  provider: local         # local execution; docker optional
+  trials: 5               # number of independent runs per task
+  timeout: 300            # seconds before the agent is killed
+  threshold: 0.8          # minimum pass rate for --ci mode
+
+tasks:
+  - name: schema-design-ecommerce
+    instruction: instructions/schema-design.md   # FILE REFERENCE - content auto-loaded
+    solution: solutions/reference-schema-design # bash script reproducing the solution (for --validate)
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py           # FILE-based grader (runs in the workspace)
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md              # FILE REFERENCE - content auto-loaded
+        weight: 0.3

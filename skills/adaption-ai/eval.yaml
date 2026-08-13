@@ -1,8 +1,8 @@
-# skillgrade evaluation for the adaption-ai skill.
+# skillgrade evaluation for the adaption-ai skill (code-generation archetype).
+# Layout: instructions/, graders/, rubrics/, solutions/ — see docs/eval-guidelines.md.
 # Usage:
-#   skillgrade          Run all tasks
-#   skillgrade --validate   Verify graders using reference solutions
-#   skillgrade --preview    Open web UI for results
+#   skillgrade --smoke --ci --provider=local
+#   skillgrade --validate
 #
 # Documentation: https://github.com/mgechev/skillgrade#readme
 
@@ -11,83 +11,19 @@ version: "1"
 defaults:
   agent: command # gemini | claude | codex | acp | opencode | command
   command: opencode run
-  provider: docker # docker | local (use local for quick iteration)
+  provider: local # docker also works; add python3 to docker.setup for the grader
   trials: 5 # number of independent runs per task
-  timeout: 300 # seconds before agent is killed
+  timeout: 300 # seconds before the agent is killed
   threshold: 0.8 # minimum pass rate for --ci mode
-  docker:
-    base: node:20-slim # base Docker image
-    setup: npm install -g opencode-ai
 
 tasks:
   - name: adaption-augmentation-pipeline
-    instruction: |
-      Write a Python script that builds a complete Adaption dataset augmentation
-      pipeline using the adaption SDK (https://docs.adaptionlabs.ai/). The script must:
-      1. Create a client from the ADAPTION_API_KEY environment variable.
-      2. Upload a local CSV (data.csv with columns "instruction" and "response").
-      3. Run an adaptation job that: maps the prompt column to "instruction",
-         enables hallucination mitigation (web-search grounding), requests
-         reasoning traces + deduplication recipes, sets max_rows=500, and uses
-         an idempotency key so retries are safe.
-      4. Wait for completion with a timeout, then fetch the quality evaluation
-         and download the augmented dataset via the returned URL.
-      Use best practices: estimate the cost before starting the real run, and
-      poll rather than assuming synchronous completion.
-    workspace:
-      - src: fixtures/sample.csv
-        dest: data.csv
-
+    instruction: instructions/pipeline-task.md
+    solution: solutions/reference-pipeline.py
     graders:
       - type: deterministic
-        run: |
-          # Verify the key API surface of the adaption SDK is used correctly.
-          python3 - <<'PY'
-          import json, re, sys
-
-          try:
-              src = open("pipeline.py").read()
-          except FileNotFoundError:
-              src = " ".join(open(f).read() for f in __import__("glob").glob("*.py"))
-
-          checks = [
-              ("client from env key", "ADAPTION_API_KEY" in src or "api_key" in src),
-              ("upload_file", "upload_file" in src),
-              ("run with column_mapping", "column_mapping" in src),
-              ("prompt mapping key", '"prompt"' in src or "'prompt'" in src),
-              ("hallucination mitigation", "hallucination_mitigation" in src),
-              ("recipe specification", "recipe_specification" in src),
-              ("max_rows cap", "max_rows" in src),
-              ("idempotency key", "idempotency_key" in src),
-              ("estimate before run", "estimate" in src),
-              ("wait for completion", "wait_for_completion" in src),
-              ("quality evaluation", "get_evaluation" in src),
-              ("download result", "download" in src),
-          ]
-
-          passed = [c for c, ok in checks if ok]
-          score = len(passed) / len(checks)
-          print(json.dumps({
-              "score": score,
-              "details": f"{len(passed)}/{len(checks)} checks passed",
-              "checks": [
-                  {"name": name, "passed": ok,
-                   "message": "found" if ok else "missing"}
-                  for name, ok in checks
-              ],
-          }))
-          sys.exit(0 if score >= 0.8 else 1)
-          PY
+        run: python3 graders/check.py
         weight: 0.7
-
       - type: llm_rubric
-        rubric: |
-          Score the agent's solution 0.0-1.0:
-          - Did it follow the full lifecycle: ingest → adapt → wait → evaluate → export?
-          - Did it request a cost estimate before running the real job on a large dataset?
-          - Did it set an idempotency key for safe retries?
-          - Did it enable hallucination mitigation and at least one recipe (reasoning traces / deduplication)?
-          - Did it poll for completion with a timeout instead of assuming sync behavior?
-          - Did it fetch quality metrics and download the result via the returned URL?
-          - Is the code clean, typed where relevant, and runnable as a standalone script?
+        rubric: rubrics/quality.md
         weight: 0.3

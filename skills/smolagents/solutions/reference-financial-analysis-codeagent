@@ -1,0 +1,63 @@
+"""Self-contained smolagents CodeAgent for multi-step financial analysis.
+
+Builds a CodeAgent that computes summary statistics and compound-growth
+projections for a portfolio of monthly returns, using one custom @tool and
+a tightly restricted import whitelist (stdlib only).
+"""
+
+import os
+import statistics
+
+from smolagents import CodeAgent, InferenceClientModel, tool
+
+
+@tool
+def compound_growth(principal: float, monthly_rate: float, months: int) -> float:
+    """
+    Project the future value of an investment with monthly compounding.
+
+    Args:
+        principal: Initial amount invested, in dollars.
+        monthly_rate: Monthly return rate as a decimal (e.g. 0.01 for 1%).
+        months: Number of compounding months to project.
+
+    Returns:
+        Projected balance after `months` of monthly compounding.
+    """
+    return principal * (1.0 + monthly_rate) ** months
+
+
+def summarize(returns: list[float]) -> str:
+    """Build a human-readable summary of a list of monthly returns."""
+    if not returns:
+        return "No return data provided."
+    return (
+        f"mean={statistics.mean(returns):.4f} "
+        f"median={statistics.median(returns):.4f} "
+        f"stddev={statistics.stdev(returns):.4f}"
+    )
+
+
+def build_agent() -> CodeAgent:
+    model = InferenceClientModel(
+        model_id="Qwen/Qwen2.5-Coder-32B-Instruct",
+        provider="together",
+        token=os.environ.get("HF_TOKEN"),
+    )
+    agent = CodeAgent(
+        tools=[compound_growth],
+        model=model,
+        max_steps=15,
+        planning_interval=3,
+        verbosity_level=1,
+        additional_authorized_imports=["math", "statistics"],
+    )
+    return agent
+
+
+if __name__ == "__main__":
+    agent = build_agent()
+    agent.run(
+        "Analyze the monthly returns [0.01, -0.02, 0.03, 0.005, 0.02] "
+        "and project the balance of a $1000 investment after 12 months."
+    )

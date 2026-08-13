@@ -1,0 +1,74 @@
+"""
+Reference solution for the langchain customer-support-agent task.
+
+A self-contained, runnable customer-support agent built with current LangChain
+APIs: create_agent, init_chat_model, @tool + ToolRuntime[Context],
+InMemorySaver checkpointer, and ToolStrategy(Response) structured output.
+"""
+from dataclasses import dataclass
+
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
+from langchain.chat_models import init_chat_model
+from langchain.tools import ToolRuntime, tool
+from langgraph.checkpoint.memory import InMemorySaver
+
+
+@dataclass
+class Context:
+    """Runtime context injected into tools via ToolRuntime."""
+    user_id: str
+    tier: str = "standard"
+
+
+@tool
+def get_account(runtime: ToolRuntime[Context]) -> str:
+    """Get the account summary for the current user."""
+    return f"Account details for user {runtime.context.user_id}"
+
+
+@tool
+def search_orders(query: str, limit: int = 10) -> str:
+    """Search the user's recent orders by keyword."""
+    return f"Found {limit} orders matching '{query}'"
+
+
+@tool
+def submit_refund(order_id: str, reason: str) -> str:
+    """Submit a refund request for an order."""
+    return f"Refund submitted for order {order_id} ({reason})"
+
+
+@dataclass
+class Response:
+    """Structured response produced by the agent."""
+    answer: str
+    order_ids: list[str] | None = None
+    confidence: float | None = None
+
+
+def build_agent():
+    """Configure and return the customer-support agent."""
+    model = init_chat_model("claude-sonnet-4-5-20250929", temperature=0)
+    return create_agent(
+        model=model,
+        system_prompt=(
+            "You are Aurora, a friendly customer-support agent. "
+            "Use get_account to check account details, search_orders to find orders, "
+            "and submit_refund to process refunds. Be concise and helpful."
+        ),
+        tools=[get_account, search_orders, submit_refund],
+        context_schema=Context,
+        response_format=ToolStrategy(Response),
+        checkpointer=InMemorySaver(),
+    )
+
+
+if __name__ == "__main__":
+    agent = build_agent()
+    result = agent.invoke(
+        {"messages": [{"role": "user", "content": "Find my recent orders"}]},
+        config={"configurable": {"thread_id": "session-42"}},
+        context=Context(user_id="user123"),
+    )
+    print(result["structured_response"])

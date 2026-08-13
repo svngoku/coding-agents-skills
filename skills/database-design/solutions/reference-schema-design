@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Reference solution for the schema-design-ecommerce task.
+#
+# skillgrade --validate runs this script inside a scratch workspace and then
+# grades the artifacts it produces, so it must create exactly the files the
+# instruction asks the agent to produce: schema.sql and DESIGN.md.
+set -euo pipefail
+
+cat > schema.sql <<'SQL'
+-- E-commerce schema: customers, products, orders, order_items
+-- PostgreSQL. Money is stored as integer cents (no floating point).
+
+CREATE TABLE customers (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    email      TEXT        NOT NULL UNIQUE,
+    full_name  TEXT        NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE products (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sku         TEXT        NOT NULL UNIQUE,
+    name        TEXT        NOT NULL,
+    price_cents BIGINT      NOT NULL CHECK (price_cents >= 0),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE orders (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_id BIGINT      NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+    status      TEXT        NOT NULL DEFAULT 'pending',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE order_items (
+    order_id         BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    product_id       BIGINT NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    quantity         INT    NOT NULL CHECK (quantity > 0),
+    unit_price_cents BIGINT NOT NULL CHECK (unit_price_cents >= 0),
+    PRIMARY KEY (order_id, product_id)
+);
+
+-- Hot paths
+CREATE INDEX idx_orders_customer_created ON orders (customer_id, created_at);
+CREATE INDEX idx_order_items_order ON order_items (order_id);
+
+SQL
+
+cat > DESIGN.md <<'MD'
+# Design Notes: Small E-Commerce Schema
+
+## Normalization (3NF)
+The schema is normalized to Third Normal Form:
+- customers, products, orders, and order_items each store facts about exactly one entity.
+- order_items references product_id only and does not store product facts (name, sku) — those live in products (no partial or transitive dependencies).
+- orders stores no customer attributes (no customer_city, no customer_email); those belong to customers (no transitive dependency on a non-key column).
+- order_items uses a composite primary key over (order_id, product_id), the natural association between orders and products.
+
+## Key choices: surrogate vs natural
+Every table uses a surrogate BIGINT GENERATED ALWAYS AS IDENTITY primary key:
+- Surrogate keys never change, are compact (8 bytes), and keep B-tree index locality under high insert volume — better than random UUIDv4 on hot tables.
+- Natural keys can change or be re-issued, so they are kept as UNIQUE business keys instead: customers.email is NOT NULL UNIQUE and products.sku is NOT NULL UNIQUE.
+
+## Index rationale
+- idx_orders_customer_created on orders (customer_id, created_at) serves the "recent orders for a customer" query: equality on customer_id first, then range/ORDER BY on created_at. One composite index covers both the WHERE and the sort.
+- idx_order_items_order on order_items (order_id) serves order-detail reads (all line items for one order) without scanning the table.
+- The PK/FK/UNIQUE constraints back the remaining lookups; no index-everything bloat.
+
+MD
+
+echo "wrote schema.sql and DESIGN.md"

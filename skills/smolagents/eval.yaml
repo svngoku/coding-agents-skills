@@ -1,0 +1,29 @@
+# skillgrade evaluation for the smolagents skill.
+# Usage:
+#   skillgrade          Run all tasks
+#   skillgrade --validate   Verify graders using reference solutions
+#   skillgrade --preview    Open web UI for results
+#
+# Documentation: https://github.com/mgechev/skillgrade#readme
+
+version: "1"
+
+defaults:
+  agent: command # opencode via 'command' (matches the user's setup)
+  command: opencode run
+  provider: local # local execution; graders run with python3 on the host (no network)
+  trials: 5 # number of independent runs per task
+  timeout: 300 # seconds before agent is killed
+  threshold: 0.8 # minimum pass rate for --ci mode
+
+tasks:
+  - name: financial-analysis-codeagent
+    instruction: instructions/financial-analysis-codeagent.md # auto-loaded
+    solution: solutions/reference-financial-analysis-codeagent # used by --validate
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py # static AST grader; stdlib only, no network
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md # auto-loaded
+        weight: 0.3

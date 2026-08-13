@@ -1,0 +1,23 @@
+# config/agents/langchain.yaml — genai-tk LangChain agent profiles
+langchain_agents:
+  default_profile: "Research"
+
+  profiles:
+    - name: "Research"
+      type: deep
+      llm: gpt_41@openai
+      enable_planning: true
+      enable_file_system: true
+      tools:
+        - spec: web_search
+          config: { provider: serper, max_results: 5 }
+      mcp_servers: [tavily-mcp]
+      skills:
+        directories:
+          - ${paths.project}/skills
+      backend:
+        type: aio_sandbox
+        opensandbox_server_url: http://localhost:8080
+        startup_timeout: 90.0
+      checkpointer:
+        type: memory

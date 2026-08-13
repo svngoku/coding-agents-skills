@@ -1,0 +1,29 @@
+# skillgrade evaluation for the unsloth-hf-jobs skill.
+# Usage:
+#   skillgrade              Run all tasks
+#   skillgrade --validate   Verify graders using reference solutions
+#   skillgrade --preview    Open web UI for results
+#
+# Documentation: https://github.com/mgechev/skillgrade#readme
+
+version: "1"
+
+defaults:
+  agent: command # gemini | claude | codex | acp | opencode | command
+  command: opencode run
+  provider: local # local execution; docker optional (grader is stdlib-only python3)
+  trials: 5 # number of independent runs per task
+  timeout: 300 # seconds before agent is killed
+  threshold: 0.8 # minimum pass rate for --ci mode
+
+tasks:
+  - name: qwen3-vl-finetune-hf-jobs
+    instruction: instructions/qwen3-vl-finetune-hf-jobs.md
+    solution: solutions/reference-qwen3-vl-finetune-hf-jobs
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md
+        weight: 0.3
