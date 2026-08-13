@@ -1,11 +1,15 @@
 # Coding Agents Skills
 
-> A curated collection of specialized skills for AI coding agents, designed to enhance agent capabilities across software development, architecture, deployment, and framework integration.
+> A curated collection of specialized skills for AI coding agents, designed to enhance agent capabilities across software development, architecture, testing, security, performance, deployment, and AI framework integration.
 
 ## 📖 Overview
 
 This repository provides production-ready skill modules for AI coding agents, enabling them to:
-- Apply software design patterns and architectural principles
+- Apply software design and architecture patterns (DDD, microservices, database design)
+- Design and review APIs with production-grade conventions
+- Write and maintain automated tests across the full test pyramid
+- Harden applications against OWASP-class vulnerabilities
+- Find and fix performance problems by measuring first
 - Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk)
 - Deploy and operate applications on cloud platforms (Scalingo)
 - Follow best practices in code generation, refactoring, and UI development
@@ -20,13 +24,31 @@ coding-agents-skills/
 ├── skills/
 │   ├── adaption-ai/                    # Adaption AI SDK for synthetic data augmentation
 │   │   ├── SKILL.md
-│   │   └── references/
-│   │       ├── api-reference.md
-│   │       └── guides.md
+│   │   ├── eval.yaml                   # skillgrade evaluation harness
+│   │   ├── references/
+│   │   │   ├── api-reference.md
+│   │   │   └── guides.md
+│   │   └── scripts/
+│   │       ├── async_pipelines.py
+│   │       └── e2e_pipeline.py
 │   │
-│   ├── ddd/                          # Domain-Driven Design
-│   │   ├── SKILL.md                  # Core skill definition
-│   │   └── references/               # Reference documentation
+│   ├── api-design/                     # REST/HTTP API design & review
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── error-handling.md
+│   │       ├── pagination-filtering.md
+│   │       └── versioning-evolution.md
+│   │
+│   ├── database-design/                # Relational & NoSQL schema design
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── indexing-and-query-tuning.md
+│   │       ├── migrations-zero-downtime.md
+│   │       └── normalization-and-keys.md
+│   │
+│   ├── ddd/                            # Domain-Driven Design
+│   │   ├── SKILL.md
+│   │   └── references/
 │   │       ├── strategic-design.md
 │   │       ├── tactical-design.md
 │   │       ├── architecture-patterns.md
@@ -35,9 +57,9 @@ coding-agents-skills/
 │   │       ├── typescript-patterns.md
 │   │       └── code-review.md
 │   │
-│   ├── genai-tk-skill/               # GenAI Toolkit (YAML-driven agent framework)
+│   ├── genai-tk-skill/                 # GenAI Toolkit (YAML-driven agent framework)
 │   │   ├── SKILL.md
-│   │   ├── AGENTS.md
+│   │   ├── genai-tk-skill.skill        # Packaged skill archive (zip)
 │   │   └── references/
 │   │       ├── agents.md
 │   │       ├── baml-structured.md
@@ -45,11 +67,28 @@ coding-agents-skills/
 │   │       ├── configuration.md
 │   │       └── rag.md
 │   │
-│   ├── langchain/                    # LangChain framework
+│   ├── langchain/                      # LangChain framework
 │   │   ├── SKILL.md
 │   │   └── references/
+│   │       ├── langgraph.md
+│   │       ├── multi-agent.md
+│   │       └── retrieval.md
 │   │
-│   ├── scalingo/                      # Scalingo European PaaS deployment
+│   ├── microservices-patterns/         # Distributed systems patterns
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── observability-tracing.md
+│   │       ├── resilience-patterns.md
+│   │       └── saga-outbox.md
+│   │
+│   ├── performance-optimization/       # Profiling & optimization
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── backend-optimization.md
+│   │       ├── frontend-performance.md
+│   │       └── profiling-tools.md
+│   │
+│   ├── scalingo/                       # Scalingo European PaaS deployment
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │       ├── addons-databases.md
@@ -60,23 +99,117 @@ coding-agents-skills/
 │   │       ├── scaling-autoscaler.md
 │   │       └── terraform-iac.md
 │   │
-│   ├── smolagents/                   # Hugging Face SmolAgents
+│   ├── security-best-practices/        # Application security hardening
 │   │   ├── SKILL.md
 │   │   └── references/
+│   │       ├── jwt-oauth.md
+│   │       └── threat-modeling.md
 │   │
-│   ├── ui/                           # UI/UX best practices for agent-built interfaces
+│   ├── smolagents/                     # Hugging Face SmolAgents
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── models.md
+│   │       ├── patterns.md
+│   │       └── tools.md
+│   │
+│   ├── testing-patterns/               # Automated testing strategies
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── flaky-tests-ci.md
+│   │       ├── js-ts-testing.md
+│   │       └── python-testing.md
+│   │
+│   ├── ui/                             # UI/UX best practices for agent-built interfaces
 │   │   └── SKILL.md
 │   │
-│   └── unsloth-hf-jobs/              # Unsloth fine-tuning on Hugging Face Jobs
+│   └── unsloth-hf-jobs/                # Unsloth fine-tuning on Hugging Face Jobs
 │       ├── SKILL.md
 │       └── scripts/
+│           ├── continued-pretraining.py
+│           ├── sft-gemma3-vlm.py
+│           └── sft-qwen3-vl.py
 │
-└── README.md
+├── README.md
+├── AGENTS.md
+└── LICENSE
 ```
 
 ## 🎯 Available Skills
 
-### 1. Domain-Driven Design (DDD)
+### 1. Adaption AI SDK
+**Status:** ✅ Complete
+
+**Description:** Build dataset augmentation pipelines with Adaption's Adaptive Data platform for synthetic data generation and fine-tuning preparation.
+
+**Capabilities:**
+- Upload and import datasets (local files, Hugging Face, Kaggle)
+- Run augmentation/adaptation jobs with brand controls and recipe specifications
+- Hallucination mitigation via web-search grounding
+- DPO preference pair generation and deduplication
+- Quality evaluation and export via presigned URLs
+- Async client support with exponential backoff polling
+- Built-in [skillgrade](https://github.com/mgechev/skillgrade) evaluation harness (`eval.yaml`)
+
+**Use Cases:**
+- Synthetic data generation for fine-tuning
+- Dataset augmentation pipelines
+- Grounding-based hallucination reduction on training data
+
+**Reference Files:** 2 guides
+
+---
+
+### 2. API Design
+**Status:** ✅ Complete
+
+**Description:** Design and review intuitive, scalable, maintainable HTTP APIs — REST primary, with GraphQL/gRPC covered in passing.
+
+**Capabilities:**
+- Resource modeling (nouns, collections, sub-resources, action POSTs)
+- HTTP semantics: safe/idempotent methods, PUT vs PATCH vs POST, Idempotency-Key
+- Correct status codes and RFC 7807 problem+json error envelopes with stable error codes
+- Cursor vs offset pagination, filtering, sorting, sparse fieldsets
+- Versioning strategies and backward-compatible evolution (Sunset headers)
+- Spec-first OpenAPI 3.x workflow: Spectral linting, ReDoc, contract testing
+- Auth (API keys, OAuth2 scopes) and rate limiting (X-RateLimit-* headers)
+- A 12-point pre-review checklist for existing APIs
+
+**Use Cases:**
+- Designing a new REST API or endpoint set
+- Reviewing API specs and PRs that change endpoint behavior
+- Establishing API design standards for a team
+- Writing OpenAPI definitions and contract tests
+
+**Reference Files:** 3 guides
+
+---
+
+### 3. Database Design
+**Status:** ✅ Complete
+
+**Description:** Design relational database schemas (and decide when NoSQL fits) that stay maintainable and fast.
+
+**Capabilities:**
+- Requirements analysis: entities, relationships, cardinality, CRUD vs reporting reads
+- Normalization 1NF–3NF and deliberate denormalization tradeoffs
+- Keys: natural vs surrogate, composite, UUID vs bigint, referential actions
+- Indexing: B-tree, composite/covering/partial indexes, reading EXPLAIN, write amplification
+- DB-enforced constraints and transactions with isolation levels
+- Zero-downtime migrations (Alembic, Prisma, Flyway) with expand-contract
+- SQL vs NoSQL decision table (relational, document, wide-column, graph)
+- Practical patterns: JSON columns, full-text search, N+1 prevention
+
+**Use Cases:**
+- Designing schemas for new features or applications
+- Choosing between SQL and NoSQL stores
+- Planning safe, zero-downtime schema migrations
+- Optimizing slow queries with EXPLAIN and targeted indexes
+
+**Reference Files:** 3 guides
+
+---
+
+### 4. Domain-Driven Design (DDD)
 **Status:** ✅ Complete
 
 **Description:** Comprehensive DDD skill for building software that reflects deep understanding of business domains.
@@ -96,57 +229,6 @@ coding-agents-skills/
 - Performing code reviews with a DDD lens
 
 **Reference Files:** 7 comprehensive guides
-
----
-
-### 2. LangChain
-**Status:** ✅ Complete
-
-**Description:** Build AI applications with the LangChain framework.
-
-**Capabilities:**
-- Chain construction and composition
-- Memory management
-- Agent creation and orchestration
-- Tool integration
-- RAG (Retrieval-Augmented Generation) patterns
-
----
-
-### 3. SmolAgents
-**Status:** ✅ Complete
-
-**Description:** Build AI agents with Hugging Face's minimalist SmolAgents framework.
-
-**Capabilities:**
-- CodeAgent and ToolCallingAgent creation
-- Custom tool development
-- MCP (Model Context Protocol) integration
-- Multi-agent systems
-- Secure code execution (E2B, Docker, Blaxel)
-- Model configuration (HF Inference, LiteLLM, Transformers, Ollama)
-- Agentic RAG and text-to-SQL pipelines
-- Web browsing agents
-
----
-
-### 4. Adaption AI SDK
-**Status:** ✅ Complete
-
-**Description:** Build dataset augmentation pipelines with Adaption's Adaptive Data platform for synthetic data generation and fine-tuning preparation.
-
-**Capabilities:**
-- Upload and import datasets (local files, Hugging Face, Kaggle)
-- Run augmentation/adaptation jobs with brand controls and recipe specifications
-- Hallucination mitigation via web-search grounding
-- DPO preference pair generation and deduplication
-- Quality evaluation and export via presigned URLs
-- Async client support with exponential backoff polling
-
-**Use Cases:**
-- Synthetic data generation for fine-tuning
-- Dataset augmentation pipelines
-- Grounding-based hallucination reduction on training data
 
 ---
 
@@ -171,9 +253,75 @@ coding-agents-skills/
 - Deep web research with Deer-flow
 - Code-first automation with SmolAgents
 
+**Reference Files:** 5 guides
+
 ---
 
-### 6. Scalingo
+### 6. LangChain
+**Status:** ✅ Complete
+
+**Description:** Build AI applications with the LangChain framework.
+
+**Capabilities:**
+- Chain construction and composition
+- Memory management and stateful agents (LangGraph checkpointing)
+- Agent creation and orchestration
+- Tool integration with `ToolRuntime` context
+- Structured output and MCP integration
+- RAG (Retrieval-Augmented Generation) patterns
+
+---
+
+### 7. Microservices Patterns
+**Status:** ✅ Complete
+
+**Description:** Decompose systems into microservices and apply the canonical distributed-systems patterns — or decide a modular monolith is the better call.
+
+**Capabilities:**
+- Microservices vs modular monolith decision criteria
+- Decomposition by bounded context/subdomain with database-per-service
+- Sync (REST/gRPC) vs async (events/messages) communication choices
+- Sagas (choreography & orchestration), compensating actions, and the outbox pattern
+- CQRS and event sourcing with honest cost-benefit
+- API gateway, BFF, and service discovery
+- Resilience: timeouts, retries with jitter, circuit breakers, bulkheads, idempotent consumers
+- Observability: structured logs, metrics, OpenTelemetry distributed tracing
+- Contract testing with Pact and independent deployability (canary releases)
+
+**Use Cases:**
+- Splitting a monolith into services (strangler fig extraction)
+- Designing service boundaries and communication flows
+- Implementing distributed transactions safely (sagas + outbox)
+- Hardening services against partial failure
+
+**Reference Files:** 3 guides
+
+---
+
+### 8. Performance Optimization
+**Status:** ✅ Complete
+
+**Description:** Find and fix performance problems by measuring first — a systematic profile → fix → re-measure workflow for backend, frontend, and network.
+
+**Capabilities:**
+- Profiling: cProfile, py-spy, Chrome DevTools, Node --cpu-prof, perf
+- Metrics: p50/p95/p99 latency, throughput, budgets, SLOs; load testing with k6/locust
+- Backend: EXPLAIN-driven query tuning, N+1 fixes, caching (Redis), connection pooling
+- Frontend: code splitting, lazy loading, image optimization, memoization, virtualization
+- Network: CDNs, compression, HTTP/2/3, prefetch/preconnect
+- Memory leaks and concurrency models (threads/async/workers, GIL-aware)
+
+**Use Cases:**
+- Diagnosing slow endpoints and page loads with before/after proof
+- Establishing performance budgets and load-testing against them
+- Fixing N+1 queries, missing indexes, cache stampedes, and pool exhaustion
+- Reducing bundle size and render-blocking resources
+
+**Reference Files:** 3 guides
+
+---
+
+### 9. Scalingo
 **Status:** ✅ Complete
 
 **Description:** Deploy and operate web applications on Scalingo, a European (French) Platform-as-a-Service with Heroku-compatible buildpacks and sovereign cloud regions.
@@ -193,9 +341,77 @@ coding-agents-skills/
 - Automating infrastructure with Terraform
 - Meeting French public-sector compliance requirements (HDS, SecNumCloud)
 
+**Reference Files:** 7 guides
+
 ---
 
-### 7. UI Skills
+### 10. Security Best Practices
+**Status:** ✅ Complete
+
+**Description:** Practical, actionable security review and hardening guidance for Python, JavaScript/TypeScript, and Go code — engineering fixes, not a compliance checklist.
+
+**Capabilities:**
+- Threat modeling with STRIDE in five minutes
+- OWASP Top 10 mapped to code-level fixes (injection, XSS, IDOR, CSRF, SSRF)
+- Authentication: argon2id/bcrypt hashing, sessions, MFA, login rate limiting
+- Authorization: RBAC/ABAC and object-level access control (IDOR prevention)
+- OAuth2/OIDC/JWT: flows, signature verification pitfalls, token storage
+- Secrets management and supply-chain scanning (pip-audit, npm audit, gitleaks, SBOM)
+- Secure defaults: TLS, CSP, security headers, CORS, cookie flags
+- Language cheat-sheets for Python, JS/TS, and Go pitfalls
+
+**Use Cases:**
+- Security reviews and prioritized vulnerability reports
+- Hardening auth and fixing OWASP-class vulnerabilities
+- Secure-by-default development of new endpoints
+- Setting up dependency scanning in CI
+
+**Reference Files:** 2 guides
+
+---
+
+### 11. SmolAgents
+**Status:** ✅ Complete
+
+**Description:** Build AI agents with Hugging Face's minimalist SmolAgents framework.
+
+**Capabilities:**
+- CodeAgent and ToolCallingAgent creation
+- Custom tool development
+- MCP (Model Context Protocol) integration
+- Multi-agent systems
+- Secure code execution (E2B, Docker, Blaxel)
+- Model configuration (HF Inference, LiteLLM, Transformers, Ollama)
+- Agentic RAG and text-to-SQL pipelines
+- Web browsing agents
+
+---
+
+### 12. Testing Patterns
+**Status:** ✅ Complete
+
+**Description:** A language-agnostic playbook for planning, writing, and maintaining automated tests — with worked examples in Python and JavaScript/TypeScript.
+
+**Capabilities:**
+- Test pyramid/trophy: unit vs integration vs e2e placement decisions
+- TDD red-green-refactor workflow and when to skip it
+- Unit test design: arrange-act-assert, given-when-then naming, fakes vs stubs vs mocks, dependency injection
+- Integration tests with testcontainers, database seeding, transaction rollback
+- Playwright/Cypress e2e testing for critical journeys
+- Property-based testing (Hypothesis, fast-check), fixtures, factories, parametrized tests
+- Coverage and mutation testing, flaky-test triage in CI
+
+**Use Cases:**
+- Writing or planning tests for a feature
+- Reviewing test suites for coverage and reliability
+- Setting up integration/e2e infrastructure (testcontainers, Playwright, CI sharding)
+- Debugging intermittent CI failures
+
+**Reference Files:** 3 guides
+
+---
+
+### 13. UI Skills
 **Status:** ✅ Complete
 
 **Description:** Opinionated constraints for building better interfaces with agents. Ensures accessibility, performance, and consistent design quality in AI-generated UI code.
@@ -215,7 +431,7 @@ coding-agents-skills/
 
 ---
 
-### 8. Unsloth Training on HF Jobs
+### 14. Unsloth Training on HF Jobs
 **Status:** ✅ Complete
 
 **Description:** Fine-tune LLMs and VLMs using Unsloth on Hugging Face on-demand cloud GPUs with UV scripts.
@@ -285,17 +501,25 @@ result = agent.run(
 
 #### With LangChain
 ```python
-from langchain.agents import AgentExecutor, create_openai_tools_agent
-from langchain_openai import ChatOpenAI
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain.tools import tool
 
-# Agent with skill context
-llm = ChatOpenAI(temperature=0)
-agent = create_openai_tools_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
+@tool
+def load_skill(skill_path: str) -> str:
+    """Load a skill's SKILL.md content by path."""
+    return open(skill_path).read()
 
-result = agent_executor.invoke({
-    "input": "Review this code for DDD compliance",
-    "skill_context": "skills/ddd/SKILL.md"
+agent = create_agent(
+    model=init_chat_model("claude-sonnet-4-5-20250929", temperature=0),
+    system_prompt="You are a software architecture advisor.",
+    tools=[load_skill],
+)
+
+result = agent.invoke({
+    "messages": [{"role": "user",
+                  "content": "Review this code for DDD compliance "
+                             "using the DDD skill."}]
 })
 ```
 
@@ -337,6 +561,18 @@ description: Detailed description of when and how to use this skill
 - Cover specific aspects of the skill in depth
 - Include code examples in relevant languages
 
+## 🧪 Evaluating Skills
+
+The `adaption-ai` skill ships with a [skillgrade](https://github.com/mgechev/skillgrade#readme) evaluation harness (`eval.yaml`) that measures how well an agent applies the skill end-to-end:
+
+```bash
+cd skills/adaption-ai
+skillgrade            # Run all tasks
+skillgrade --validate # Verify graders using reference solutions
+```
+
+The harness runs an agent against a concrete pipeline-building task, checks the resulting code against a deterministic grader (key API surface), and scores it with an LLM rubric. Skills with an `eval.yaml` are marked in the tree above.
+
 ## 🤝 Contributing
 
 Contributions are welcome! To add a new skill:
@@ -356,6 +592,7 @@ Contributions are welcome! To add a new skill:
 - Document anti-patterns and common mistakes
 - Keep reference files modular and cross-referenced
 - Use YAML frontmatter with `name` and `description` for machine readability
+- See `AGENTS.md` for the full convention checklist
 
 ## 📚 Roadmap
 
@@ -367,12 +604,17 @@ Contributions are welcome! To add a new skill:
 - [x] Scalingo deployment skill
 - [x] UI best practices skill
 - [x] Unsloth fine-tuning skill
-- [ ] Testing patterns skill
-- [ ] API design skill
-- [ ] Database design skill
-- [ ] Microservices patterns skill
-- [ ] Security best practices skill
-- [ ] Performance optimization skill
+- [x] Testing patterns skill
+- [x] API design skill
+- [x] Database design skill
+- [x] Microservices patterns skill
+- [x] Security best practices skill
+- [x] Performance optimization skill
+- [ ] MCP server authoring skill
+- [ ] RAG patterns skill (retrieval architecture deep dive)
+- [ ] LLM evaluation & observability skill (Langfuse, evals)
+- [ ] Next.js / React framework patterns skill
+- [ ] Kubernetes operations skill
 
 ## 🔗 Related Projects
 
@@ -383,10 +625,14 @@ Contributions are welcome! To add a new skill:
 - [Scalingo](https://scalingo.com/) - European Platform-as-a-Service
 - [Unsloth](https://github.com/unslothai/unsloth) - Fast LLM fine-tuning
 - [Adaption](https://docs.adaptionlabs.ai/) - Synthetic data augmentation platform
+- [OWASP Top 10](https://owasp.org/Top10/) - Web application security risks
+- [Pact](https://pact.io/) - Consumer-driven contract testing
+- [OpenTelemetry](https://opentelemetry.io/) - Distributed tracing and observability
+- [Playwright](https://playwright.dev/) - End-to-end browser testing
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+MIT License - see [LICENSE](LICENSE) file for details
 
 ## 👤 Author
 
