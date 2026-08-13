@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Reference solution for the scalingo-deploy task.
+#
+# skillgrade --validate runs this script inside a scratch workspace and then
+# grades the artifacts it produces, so it must create exactly the files the
+# instruction asks the agent to produce: scalingo.json, Procfile, deploy.sh.
+set -euo pipefail
+
+cat > scalingo.json <<'JSON'
+{
+  "name": "Flask Notes",
+  "description": "Notes app deployed on Scalingo (Paris, osc-fr1)",
+  "env": {
+    "SECRET_KEY": { "generator": "secret" },
+    "FLASK_ENV": { "value": "production" }
+  },
+  "formation": {
+    "web": { "amount": 1, "size": "M" }
+  },
+  "addons": [
+    { "plan": "postgresql:postgresql-starter-512" }
+  ],
+  "scripts": {
+    "first-deploy": "flask db upgrade"
+  }
+}
+JSON
+
+cat > Procfile <<'EOF'
+web: gunicorn app:app --bind 0.0.0.0:$PORT
+EOF
+
+cat > deploy.sh <<'SH'
+#!/usr/bin/env bash
+# Deploy flask-notes to Scalingo (Paris, osc-fr1).
+set -euo pipefail
+
+APP="flask-notes"
+REGION="osc-fr1"
+
+# Set the region once so every command targets osc-fr1.
+scalingo config --region "$REGION"
+
+# Create the app in the target region.
+scalingo create "$APP" --region "$REGION"
+
+# Configure environment (no secrets committed; generated at deploy time).
+scalingo --app "$APP" env-set   SECRET_KEY="$(openssl rand -hex 32)"   FLASK_ENV=production
+
+# Point the scalingo remote at the app and deploy the main branch.
+git remote add scalingo "git@ssh.${REGION}.scalingo.com:${APP}.git" || true
+git push scalingo main
+
+# Provision the managed PostgreSQL addon, then scale the web process.
+scalingo --app "$APP" addons-add postgresql postgresql-starter-512
+scalingo --app "$APP" scale web:1:M
+
+# Post-deploy check: tail logs to confirm the app booted.
+scalingo --app "$APP" logs --lines 50
+SH
+
+chmod +x deploy.sh
+
+echo "wrote scalingo.json, Procfile, deploy.sh"

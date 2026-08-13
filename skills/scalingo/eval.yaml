@@ -1,0 +1,30 @@
+# skillgrade evaluation for the scalingo skill (code-generation archetype).
+# Layout: instructions/, graders/, rubrics/, solutions/.
+# Usage:
+#   skillgrade              Run all tasks
+#   skillgrade --validate   Verify graders using the reference solution
+#   skillgrade --preview    Open web UI for results
+#
+# Documentation: https://github.com/mgechev/skillgrade#readme
+
+version: "1"
+
+defaults:
+  agent: command          # opencode via 'command' (matches the user's setup)
+  command: opencode run
+  provider: local         # local execution; grader runs python3 on the host
+  trials: 5               # number of independent runs per task
+  timeout: 300            # seconds before the agent is killed
+  threshold: 0.8          # minimum pass rate for --ci mode
+
+tasks:
+  - name: scalingo-deploy
+    instruction: instructions/scalingo-deploy.md   # FILE REFERENCE - content auto-loaded
+    solution: solutions/reference-scalingo-deploy  # bash script reproducing the artifacts (for --validate)
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py              # FILE-based grader (runs in the workspace)
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md                 # FILE REFERENCE - content auto-loaded
+        weight: 0.3

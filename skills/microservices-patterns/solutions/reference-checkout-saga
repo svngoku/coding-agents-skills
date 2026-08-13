@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+# Reference solution for the checkout-choreographed-saga task.
+#
+# skillgrade --validate runs this script inside a scratch workspace and then
+# grades the artifacts it produces, so it must create exactly the files the
+# instruction asks the agent to produce: checkout-design.md and events.py.
+# (Known limitation: skillgrade 0.2.2 --validate does not copy file-based
+# solutions; verify the grader by direct execution instead.)
+set -euo pipefail
+
+cat > checkout-design.md <<'MD'
+# Choreographed Checkout Saga - Design
+
+## Service boundaries
+
+| Service | Owns (data) | Publishes | Subscribes to |
+|---|---|---|---|
+| Orders | orders, saga state, outbox | OrderPlaced, OrderConfirmed, CompensationTriggered | PaymentSucceeded, PaymentFailed, InventoryReserved, InventoryFailed |
+| Payments | payments, refunds | PaymentSucceeded, PaymentFailed | OrderPlaced, CompensationTriggered |
+| Inventory | stock reservations | InventoryReserved, InventoryFailed | OrderPlaced, CompensationTriggered |
+| Notifications | sent-notification ledger | NotificationSent | OrderConfirmed |
+
+Each service owns its data exclusively. Services communicate only through
+events on the broker - no shared database, no cross-service table access, and
+no synchronous call chains.
+
+## Event choreography
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant O as Orders
+    participant B as Broker
+    participant P as Payments
+    participant I as Inventory
+    participant N as Notifications
+
+    C->>O: POST /checkout
+    O->>O: persist order + outbox row (local tx)
+    O->>B: OrderPlaced
+    B->>P: OrderPlaced
+    B->>I: OrderPlaced
+    P->>P: capture payment
+    P->>B: PaymentSucceeded
+    I->>I: reserve stock
+    I->>B: InventoryReserved
+    B->>O: PaymentSucceeded + InventoryReserved
+    O->>O: saga state -> CONFIRMED
+    O->>B: OrderConfirmed
+    B->>N: OrderConfirmed
+    N-->>C: confirmation email
+    Note over I: stock short
+    I->>B: InventoryFailed
+    B->>O: InventoryFailed
+    O->>O: saga state -> COMPENSATING
+    O->>B: CompensationTriggered
+    B->>P: CompensationTriggered
+    P->>P: refund payment
+```
+
+## Failure handling and compensation
+
+If a participant fails, it publishes its failure event and the saga
+compensates in reverse order of the steps that succeeded:
+
+- Inventory short -> `InventoryFailed` -> Orders runs compensation ->
+  `CompensationTriggered` -> Payments refunds (idempotent by payment id).
+- Payment declined -> `PaymentFailed` -> no compensation needed (nothing
+  committed after the order itself, which stays cancelled).
+
+Compensating actions are business-level undos (refund the payment, release the
+reservation), never database rollbacks. Each compensation is idempotent and
+retried with backoff; if retries are exhausted the order goes to a manual
+resolution queue. Every participant reacts to both success and failure events.
+
+## The outbox pattern
+
+Events are published reliably with a transactional outbox. In the SAME local
+transaction that changes state, each service writes a row to its outbox table;
+a relay (polling publisher or CDC such as Debezium) publishes outbox rows to
+the broker, which delivers at-least-once. No event is lost between the database
+write and the broker.
+
+## Idempotent consumers
+
+Because delivery is at-least-once, consumers deduplicate: they record the
+processed event id in the same transaction as the effect (a unique
+processed_events key), so redeliveries and retries are no-ops. Outgoing calls
+use idempotency keys (e.g. refund by refund id) so retries are safe.
+MD
+
+cat > events.py <<'PY'
+"""Domain events for the choreographed checkout saga.
+
+Each event is an immutable dataclass carrying an order_id (the saga aggregate)
+and an event_id (for idempotent consumers). Published by exactly one service
+via its outbox; consumed by the services that subscribe to it.
+"""
+
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+
+
+@dataclass(frozen=True)
+class OrderPlaced:
+    order_id: str
+    customer_id: str
+    total_cents: int
+    event_id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class PaymentSucceeded:
+    order_id: str
+    payment_id: str
+    event_id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class PaymentFailed:
+    order_id: str
+    reason: str
+    event_id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class InventoryReserved:
+    order_id: str
+    reservation_id: str
+    event_id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class InventoryFailed:
+    order_id: str
+    unavailable_skus: list
+    event_id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class CompensationTriggered:
+    order_id: str
+    reason: str
+    event_id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class OrderConfirmed:
+    order_id: str
+    event_id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class NotificationSent:
+    order_id: str
+    channel: str
+    event_id: UUID = field(default_factory=uuid4)
+PY
+
+echo "wrote checkout-design.md and events.py"

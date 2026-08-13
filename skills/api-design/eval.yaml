@@ -1,0 +1,33 @@
+# skillgrade evaluation for the api-design skill (code-generation archetype).
+# Task: the agent writes an OpenAPI 3.x spec (openapi.yaml) for an orders API.
+# Layout: instructions/, graders/, rubrics/, solutions/ — see docs/eval-guidelines.md.
+# Usage:
+#   skillgrade --smoke --ci --provider=local
+#   skillgrade --validate
+#
+# Note: skillgrade 0.2.2 --validate does not copy file-based solutions into the
+# workspace. Verify the grader by running it directly against the reference
+# artifacts (see solutions/reference-orders-api-openapi).
+# Documentation: https://github.com/mgechev/skillgrade#readme
+
+version: "1"
+
+defaults:
+  agent: command          # opencode via 'command' (matches the user's setup)
+  command: opencode run
+  provider: local         # local execution; grader runs python3 on the host
+  trials: 5               # number of independent runs per task
+  timeout: 300            # seconds before the agent is killed
+  threshold: 0.8          # minimum pass rate for --ci mode
+
+tasks:
+  - name: orders-api-openapi
+    instruction: instructions/orders-api-openapi.md   # FILE REFERENCE - content auto-loaded
+    solution: solutions/reference-orders-api-openapi # bash script reproducing openapi.yaml (for --validate)
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py                 # FILE-based grader (runs in the workspace)
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md                    # FILE REFERENCE - content auto-loaded
+        weight: 0.3

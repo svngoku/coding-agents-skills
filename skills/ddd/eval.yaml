@@ -1,0 +1,29 @@
+# skillgrade evaluation for the ddd skill (code-generation archetype).
+# Layout: instructions/, graders/, rubrics/, solutions/ — see docs/eval-guidelines.md.
+# Usage:
+#   skillgrade --smoke --ci --provider=local
+#   skillgrade --validate
+#
+# Documentation: https://github.com/mgechev/skillgrade#readme
+
+version: "1"
+
+defaults:
+  agent: command          # opencode via 'command' (matches the user's setup)
+  command: opencode run
+  provider: local         # local execution; grader runs python3 on the host
+  trials: 5               # number of independent runs per task
+  timeout: 300            # seconds before the agent is killed
+  threshold: 0.8          # minimum pass rate for --ci mode
+
+tasks:
+  - name: checkout-domain-model
+    instruction: instructions/checkout-domain-model.md   # FILE REFERENCE - content auto-loaded
+    solution: solutions/reference-checkout-domain       # bash script reproducing the artifacts (for --validate)
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py                   # FILE-based grader (runs in the workspace)
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md                      # FILE REFERENCE - content auto-loaded
+        weight: 0.3

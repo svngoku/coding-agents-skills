@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Reference solution for the secure-login-rewrite task.
+#
+# skillgrade --validate runs this script inside a scratch workspace and then
+# grades the artifacts it produces, so it must create exactly the file the
+# instruction asks the agent to produce: secure_app.py.
+set -euo pipefail
+
+cat > secure_app.py <<'PY'
+"""secure_app.py - hardened login endpoint (FastAPI-style).
+
+Rewrite of vulnerable.py. Fixes, mapped to the flaws in the original:
+  * plaintext passwords        -> argon2id hashing (PasswordHasher)
+  * f-string SQL injection     -> parameterized queries with ? placeholders
+  * "User not found" vs
+    "Wrong password" leak      -> single generic "Invalid credentials" error
+                                  plus a dummy-hash verify for timing parity
+  * no rate limiting           -> slowapi per-IP limiter (5/minute)
+  * hardcoded secret           -> all configuration from os.environ
+  * token-as-secret session    -> random 256-bit session id in a hardened
+                                  HttpOnly/Secure/SameSite cookie
+"""
+
+import os
+import secrets
+import sqlite3
+from datetime import datetime, timedelta, timezone
+
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
+from fastapi import FastAPI, HTTPException, Request, Response
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+ph = PasswordHasher()  # argon2id with OWASP-recommended parameters
+
+# Timing parity for unknown users: always verify a real argon2 hash so the
+# response time does not reveal whether the username exists.
+DUMMY_HASH = ph.hash("not-a-real-password")
+
+# Secrets and configuration come from the environment; nothing hardcoded.
+DB_PATH = os.environ.get("APP_DB_PATH", "app.db")
+SESSION_TTL_HOURS = int(os.environ.get("SESSION_TTL_HOURS", "24"))
+
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI()
+app.state.limiter = limiter
+
+
+def get_db():
+    return sqlite3.connect(DB_PATH)
+
+
+def get_user(username):
+    conn = get_db()
+    cur = conn.cursor()
+    # Parameterized query - never build SQL from user input.
+    cur.execute(
+        "SELECT id, username, password_hash FROM users WHERE username = ?",
+        (username,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+@app.post("/login")
+@limiter.limit("5/minute")
+async def login(request: Request, response: Response, username: str, password: str):
+    row = get_user(username)
+    stored = row[2] if row else DUMMY_HASH
+    try:
+        ph.verify(stored, password)
+        valid = row is not None
+    except VerifyMismatchError:
+        valid = False
+    if not valid:
+        # Identical message whether the user exists or the password is wrong.
+        raise HTTPException(401, detail="Invalid credentials")
+
+    session_id = secrets.token_urlsafe(32)  # 256-bit random session id
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO sessions (session_id, user_id, expires_at) VALUES (?, ?, ?)",
+        (
+            session_id,
+            row[0],
+            datetime.now(timezone.utc) + timedelta(hours=SESSION_TTL_HOURS),
+        ),
+    )
+    conn.commit()
+    conn.close()
+    response.set_cookie(
+        "session",
+        session_id,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=86400,
+    )
+    return {"ok": True}
+PY
+
+echo "wrote secure_app.py"

@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+# Reference solution for the checkout-domain-model task.
+#
+# skillgrade --validate runs this script inside a scratch workspace and then
+# grades the artifacts it produces, so it must create exactly the files the
+# instruction asks the agent to produce: domain.py and context-map.md.
+set -euo pipefail
+
+cat > domain.py <<'PY'
+# domain.py - reference tactical model for the checkout domain.
+# Pure domain layer: standard library only, no infrastructure dependencies.
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from uuid import UUID, uuid4
+
+
+# ---------------------------------------------------------------------------
+# Value objects - immutable, defined by attributes, no identity
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Money:
+    amount: float
+    currency: str
+
+    def __post_init__(self) -> None:
+        if self.amount < 0:
+            raise ValueError("amount must not be negative")
+        if len(self.currency) != 3:
+            raise ValueError("currency must be a 3-letter ISO code")
+
+    def add(self, other: Money) -> Money:
+        if self.currency != other.currency:
+            raise ValueError(f"currency mismatch: {self.currency} vs {other.currency}")
+        return Money(self.amount + other.amount, self.currency)
+
+    def multiply(self, factor: int) -> Money:
+        return Money(self.amount * factor, self.currency)
+
+
+@dataclass(frozen=True)
+class Address:
+    street: str
+    city: str
+    postal_code: str
+    country: str
+
+
+# ---------------------------------------------------------------------------
+# Entities - identity matters
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Customer:
+    id: UUID = field(default_factory=uuid4)
+    name: str = ""
+    email: str = ""
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Customer) and self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+
+@dataclass
+class Product:
+    id: UUID = field(default_factory=uuid4)
+    name: str = ""
+    unit_price: Money | None = None
+
+
+# ---------------------------------------------------------------------------
+# Order aggregate - consistency boundary
+# ---------------------------------------------------------------------------
+
+class OrderStatus(Enum):
+    DRAFT = "draft"
+    PLACED = "placed"
+    PAID = "paid"
+    CANCELLED = "cancelled"
+
+
+@dataclass
+class OrderLine:
+    product_id: UUID
+    quantity: int
+    unit_price: Money
+
+    def __post_init__(self) -> None:
+        if self.quantity <= 0:
+            raise ValueError("quantity must be positive")
+
+    @property
+    def subtotal(self) -> Money:
+        return self.unit_price.multiply(self.quantity)
+
+
+@dataclass
+class Order:
+    """Aggregate root: enforces checkout invariants, references other
+    aggregates by ID only."""
+    id: UUID = field(default_factory=uuid4)
+    customer_id: UUID = field(default_factory=uuid4)
+    status: OrderStatus = OrderStatus.DRAFT
+    lines: list[OrderLine] = field(default_factory=list)
+    placed_at: datetime | None = None
+    _events: list = field(default_factory=list, repr=False)
+
+    def add_line(self, product_id: UUID, quantity: int, unit_price: Money) -> None:
+        if self.status != OrderStatus.DRAFT:
+            raise ValueError("cannot modify an order after it is placed")
+        if quantity <= 0:
+            raise ValueError("quantity must be positive")
+        self.lines.append(OrderLine(product_id, quantity, unit_price))
+
+    def place(self) -> None:
+        if self.status != OrderStatus.DRAFT:
+            raise ValueError("only draft orders can be placed")
+        if not self.lines:
+            raise ValueError("cannot place an empty order")
+        self.status = OrderStatus.PLACED
+        self.placed_at = datetime.utcnow()
+        self._events.append(OrderPlaced(
+            order_id=self.id, customer_id=self.customer_id, placed_at=self.placed_at))
+
+    def capture_payment(self) -> None:
+        if self.status != OrderStatus.PLACED:
+            raise ValueError("only placed orders can be paid")
+        self.status = OrderStatus.PAID
+        self._events.append(PaymentCaptured(order_id=self.id, captured_at=datetime.utcnow()))
+
+    def cancel(self, reason: str) -> None:
+        if self.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+            raise ValueError("cannot cancel a paid or already-cancelled order")
+        self.status = OrderStatus.CANCELLED
+        self._events.append(OrderCancelled(order_id=self.id, reason=reason))
+
+    @property
+    def total(self) -> Money:
+        total = Money(0.0, "USD")
+        for line in self.lines:
+            total = total.add(line.subtotal)
+        return total
+
+    def collect_events(self) -> list:
+        events = list(self._events)
+        self._events.clear()
+        return events
+
+
+# ---------------------------------------------------------------------------
+# Domain events - past tense, immutable, recorded by the aggregate
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class OrderPlaced:
+    order_id: UUID
+    customer_id: UUID
+    placed_at: datetime
+
+
+@dataclass(frozen=True)
+class PaymentCaptured:
+    order_id: UUID
+    captured_at: datetime
+
+
+@dataclass(frozen=True)
+class OrderCancelled:
+    order_id: UUID
+    reason: str
+
+
+# ---------------------------------------------------------------------------
+# Repository port - interface only, implementation lives in infrastructure
+# ---------------------------------------------------------------------------
+
+class OrderRepository(ABC):
+    @abstractmethod
+    def find_by_id(self, order_id: UUID) -> Order | None: ...
+
+    @abstractmethod
+    def save(self, order: Order) -> None: ...
+
+    @abstractmethod
+    def find_by_customer(self, customer_id: UUID) -> list[Order]: ...
+
+PY
+
+cat > context-map.md <<'MD'
+# Checkout Domain - Context Map
+
+## Bounded contexts
+
+| Context | Responsibility | Owns |
+|---------|----------------|------|
+| **Sales** | Order lifecycle, checkout | **Order** (aggregate root) |
+| **Inventory** | Stock levels, reservation of items | - |
+| **Billing** | Invoices, payment capture records | - |
+| **Payment** | Payment-provider (PSP) integration | - |
+
+## Relationships
+
+- **Sales -> Inventory (ACL)**: Sales integrates with Inventory through an
+  Anti-Corruption Layer that translates Inventory's stock model; Inventory is
+  **upstream**, Sales is the **downstream** consumer.
+- **Payment -> Billing (Conformist)**: Billing adopts Payment's capture model
+  as-is; Payment is **upstream**, Billing is **downstream**.
+- **Sales -> Payment (OHS / Published Language)**: Sales initiates payment
+  capture over Payment's published API.
+
+## Ownership
+
+The **Sales** context owns the **Order** aggregate. Inventory, Billing, and
+Payment never modify an Order directly - they react to Order events
+(OrderPlaced, PaymentCaptured) raised by the Sales context.
+
+## Ubiquitous language
+
+Order, OrderLine, place, capture, reserve - used consistently in domain.py.
+
+MD
+
+echo "wrote domain.py and context-map.md"

@@ -1,0 +1,34 @@
+# skillgrade evaluation for the testing-patterns skill (code-generation archetype).
+# The agent writes a pytest suite (test_orders.py) for a buggy orders module
+# (fixtures/orders.py); the deterministic grader statically checks the suite
+# with the ast module - no pytest execution, no network.
+# Usage:
+#   skillgrade              Run all tasks
+#   skillgrade --validate   Verify graders using the reference solution
+#
+# Documentation: https://github.com/mgechev/skillgrade#readme
+
+version: "1"
+
+defaults:
+  agent: command          # opencode via 'command' (matches the user's setup)
+  command: opencode run
+  provider: local         # local execution; grader runs python3 on the host
+  trials: 5               # number of independent runs per task
+  timeout: 300            # seconds before the agent is killed
+  threshold: 0.8          # minimum pass rate for --ci mode
+
+tasks:
+  - name: orders-test-suite
+    instruction: instructions/orders-tests.md   # FILE REFERENCE - content auto-loaded
+    solution: solutions/reference-test-orders  # bash script reproducing the artifact (for --validate)
+    workspace:                                  # fixture copied into the agent workspace
+      - src: fixtures/orders.py
+        dest: orders.py
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py           # FILE-based grader (runs in the workspace)
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md              # FILE REFERENCE - content auto-loaded
+        weight: 0.3

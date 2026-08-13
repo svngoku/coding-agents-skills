@@ -1,0 +1,297 @@
+#!/usr/bin/env bash
+# Reference solution for the orders-api-openapi task.
+#
+# skillgrade --validate runs this script inside a scratch workspace and then
+# grades the artifacts it produces, so it must create exactly the file the
+# instruction asks the agent to produce: openapi.yaml.
+set -euo pipefail
+
+cat > openapi.yaml <<'YAML'
+openapi: 3.1.0
+info:
+  title: Orders API
+  version: 2.0.0
+  description: Orders lifecycle API - create, list, update and cancel orders.
+servers:
+  - url: https://api.example.com/v2
+security:
+  - oauth2: [read:orders, write:orders]
+paths:
+  /orders:
+    get:
+      summary: List orders
+      description: Cursor-paginated list of orders, filterable by status and sortable.
+      security:
+        - oauth2: [read:orders]
+      parameters:
+        - name: status
+          in: query
+          description: Filter by order status
+          schema:
+            type: string
+            enum: [created, confirmed, shipped, cancelled]
+        - name: sort
+          in: query
+          description: Comma-separated sort fields; '-' prefix means descending
+          schema:
+            type: string
+            example: "-created_at"
+        - name: cursor
+          in: query
+          description: Opaque pagination token from the previous page
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of orders per page
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+      responses:
+        "200":
+          description: A page of orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+        "422":
+          description: Invalid filter or sort parameter
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: Too many requests
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    post:
+      summary: Create an order
+      description: Creates a new order. Idempotency-Key is required so retries do not double-create.
+      security:
+        - oauth2: [write:orders]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Client-generated UUID that keys retries to the original response
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewOrder"
+      responses:
+        "201":
+          description: Order created
+          headers:
+            Location:
+              description: URI of the created order
+              schema:
+                type: string
+                example: "/orders/ord_8f2"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "422":
+          description: Order is semantically invalid (e.g. empty items, negative qty)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: Too many requests
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /orders/{id}:
+    get:
+      summary: Get an order
+      security:
+        - oauth2: [read:orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    patch:
+      summary: Update an order
+      description: Partially updates an order (e.g. shipping address). Only changed fields are sent.
+      security:
+        - oauth2: [write:orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderUpdate"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Idempotency-Key replay with a different body
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /orders/{id}/cancel:
+    post:
+      summary: Cancel an order
+      description: Domain action that cancels the order and triggers refunds. Keyed by Idempotency-Key.
+      security:
+        - oauth2: [write:orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "409":
+          description: Order already shipped and cannot be cancelled
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth2 client credentials for machine-to-machine access
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            read:orders: Read order details and lists
+            write:orders: Create, update and cancel orders
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string }
+        retryable: { type: boolean }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              code: { type: string }
+              message: { type: string }
+    Order:
+      type: object
+      required: [id, status, total, currency]
+      properties:
+        id: { type: string, example: "ord_8f2" }
+        status: { type: string, enum: [created, confirmed, shipped, cancelled] }
+        total: { type: string, example: "129.00" }
+        currency: { type: string, example: "USD" }
+        created_at: { type: string, format: date-time }
+    NewOrder:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, qty]
+            properties:
+              sku: { type: string }
+              qty: { type: integer, minimum: 1 }
+    OrderUpdate:
+      type: object
+      properties:
+        shipping_address: { type: string }
+        status: { type: string, enum: [created, confirmed] }
+    OrderPage:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        pagination:
+          type: object
+          required: [has_more]
+          properties:
+            next_cursor:
+              type: string
+              description: Opaque cursor for the next page; null/absent when has_more is false
+            has_more:
+              type: boolean
+              description: True if more pages follow
+YAML
+
+echo "wrote openapi.yaml"

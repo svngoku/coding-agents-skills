@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Reference solution for the orders-test-suite task.
+#
+# skillgrade --validate runs this script inside a scratch workspace and then
+# grades the artifacts it produces, so it must create exactly the file the
+# instruction asks the agent to produce: test_orders.py. (The buggy orders.py
+# comes from the fixtures copy in eval.yaml.)
+set -euo pipefail
+
+cat > test_orders.py <<'PY'
+"""Tests for the (intentionally buggy) orders module.
+
+Pins the INTENDED behavior: every test below fails against the current
+buggy orders.py (negative quantities accepted, double discount, empty-cart
+ZeroDivisionError) - that is what makes them useful.
+"""
+import pytest
+
+from orders import Cart, apply_discount
+
+
+@pytest.fixture
+def cart():
+    """A fresh cart per test - isolated, no shared mutable state."""
+    return Cart()
+
+
+# --- Bug 1: add_item must reject negative quantities -------------------------
+
+def test_given_negative_quantity_when_add_item_then_raises_value_error(cart):
+    with pytest.raises(ValueError):
+        cart.add_item("book", 1000, -1)
+
+
+def test_given_zero_quantity_when_add_item_then_accepts_and_counts_zero(cart):
+    cart.add_item("book", 1000, 0)
+    assert cart.item_count() == 0
+
+
+# --- Bug 2: apply_discount must apply the discount exactly once --------------
+
+@pytest.mark.parametrize(
+    "amount,percent,expected",
+    [
+        (100, 10, 90),   # 10% off 100 -> 90 (buggy implementation returns 80)
+        (100, 0, 100),   # no discount
+        (50, 100, 0),    # 100% off
+        (0, 25, 0),      # free item
+    ],
+    ids=["ten-percent", "zero-percent", "full-discount", "zero-amount"],
+)
+def test_given_amount_and_percent_when_apply_discount_then_returns_expected(
+    amount, percent, expected
+):
+    assert apply_discount(amount, percent) == expected
+
+
+def test_given_negative_amount_when_apply_discount_then_raises_value_error():
+    with pytest.raises(ValueError):
+        apply_discount(-5, 10)
+
+
+def test_given_invalid_percent_when_apply_discount_then_raises_value_error():
+    with pytest.raises(ValueError):
+        apply_discount(100, 150)
+
+
+# --- Bug 3: average_unit_price must not divide by zero -----------------------
+
+def test_given_empty_cart_when_average_unit_price_then_raises_value_error(cart):
+    with pytest.raises(ValueError):
+        cart.average_unit_price()
+
+
+def test_given_items_when_average_unit_price_then_returns_mean(cart):
+    cart.add_item("book", 200, 2)
+    cart.add_item("pen", 100, 1)
+    assert cart.average_unit_price() == pytest.approx(500 / 3)
+PY
+
+echo "wrote test_orders.py"
