@@ -1,0 +1,55 @@
+max_steps = 40
+seq_len = 2048
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B-Reverse-Text-SFT"
+
+[monitors.wandb]
+project = "reverse-text"
+
+[orchestrator]
+batch_size = 128
+
+[orchestrator.train]
+group_size = 16
+
+[orchestrator.train.algo]
+type = "grpo"
+
+[orchestrator.train.sampling]
+max_completion_tokens = 128
+
+[[orchestrator.train.source]]
+name = "reverse-text"
+env.taskset.id = "reverse-text"
+env.agent.harness.id = "null"
+env.agent.runtime.type = "subprocess"
+
+[orchestrator.eval]
+interval = 10
+
+[orchestrator.eval.sampling]
+max_completion_tokens = 128
+
+[[orchestrator.eval.source]]
+name = "reverse-text-eval"
+select.limit = 128
+env.taskset.id = "reverse-text"
+env.agent.harness.id = "null"
+env.agent.runtime.type = "subprocess"
+
+[trainer.optim]
+lr = 3e-6
+
+[trainer.loss]
+type = "icepop"
+
+[ckpt]
+interval = 10
+keep_last = 3
+
+[inference]
+
+# The -SFT suffix misses the automatic renderer map, so pick the renderer explicitly.
+[orchestrator.renderer]
+name = "prime-qwen3"

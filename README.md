@@ -11,6 +11,7 @@ This repository provides production-ready skill modules for AI coding agents, en
 - Harden applications against OWASP-class vulnerabilities
 - Find and fix performance problems by measuring first
 - Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk)
+- Post-train and fine-tune LLMs (prime-rl, Unsloth)
 - Deploy and operate applications on cloud platforms (Scalingo)
 - Follow best practices in code generation, refactoring, and UI development
 - Integrate seamlessly with development workflows
@@ -88,6 +89,17 @@ coding-agents-skills/
 │   │       ├── backend-optimization.md
 │   │       ├── frontend-performance.md
 │   │       └── profiling-tools.md
+│   │
+│   ├── prime-rl/                       # PrimeIntellect prime-rl post-training (RL, SFT, distillation)
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── algorithms.md
+│   │       ├── configs.md
+│   │       ├── eval.md
+│   │       ├── install.md
+│   │       ├── monitoring.md
+│   │       ├── scaling.md
+│   │       └── training-runs.md
 │   │
 │   ├── scalingo/                       # Scalingo European PaaS deployment
 │   │   ├── SKILL.md
@@ -330,7 +342,32 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
-### 9. Scalingo
+### 9. prime-rl — Post-Training at Scale
+**Status:** ✅ Complete
+
+**Description:** Post-train LLMs with PrimeIntellect's [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl): asynchronous RL, SFT, distillation and evals on verifiers environments. Built from the upstream `skills/` runbooks and checked against the config classes at commit `dd72f0f`, including a table of places where the upstream docs and code disagree.
+
+**Capabilities:**
+- Install with uv, opt-in environment packages, and optional kernel/DeepEP extras
+- pydantic-config TOML + CLI composition (`@ file.toml`, dotted overrides, `--dry-run`)
+- `uv run rl` / `sft` / `inference` / `eval` entrypoints and run-directory layout
+- Algorithms: GRPO, MaxRL, RAE, hierarchical GRPO, OPD, SFT-distill, OPSD, ECHO
+- RL losses (IPO default, IcePop, PPO, CISPO, custom), length penalties, curricula, renderers
+- Checkpointing, resume, fork, and DCP → HF safetensors / FP8 export
+- Metrics, logs, dashboard and an agent check-in runbook for live runs
+- Multi-node SLURM, FSDP/EP/CP parallelism, LoRA, weight broadcast, disaggregated inference
+
+**Use Cases:**
+- Writing and validating `rl.toml` / `sft.toml` / `eval.toml` configs
+- Choosing and tuning a post-training algorithm for a verifiable-reward task
+- Launching, monitoring, resuming and exporting training runs
+- Benchmarking checkpoints on verifiers environments
+
+**Reference Files:** 7 guides
+
+---
+
+### 10. Scalingo
 **Status:** ✅ Complete
 
 **Description:** Deploy and operate web applications on Scalingo, a European (French) Platform-as-a-Service with Heroku-compatible buildpacks and sovereign cloud regions.
@@ -354,7 +391,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
-### 10. Security Best Practices
+### 11. Security Best Practices
 **Status:** ✅ Complete
 
 **Description:** Practical, actionable security review and hardening guidance for Python, JavaScript/TypeScript, and Go code — engineering fixes, not a compliance checklist.
@@ -379,7 +416,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
-### 11. SmolAgents
+### 12. SmolAgents
 **Status:** ✅ Complete
 
 **Description:** Build AI agents with Hugging Face's minimalist SmolAgents framework.
@@ -396,7 +433,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
-### 12. Testing Patterns
+### 13. Testing Patterns
 **Status:** ✅ Complete
 
 **Description:** A language-agnostic playbook for planning, writing, and maintaining automated tests — with worked examples in Python and JavaScript/TypeScript.
@@ -420,7 +457,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
-### 13. UI Skills
+### 14. UI Skills
 **Status:** ✅ Complete
 
 **Description:** Opinionated constraints for building better interfaces with agents. Ensures accessibility, performance, and consistent design quality in AI-generated UI code.
@@ -440,7 +477,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
-### 14. Unsloth Training on HF Jobs
+### 15. Unsloth Training on HF Jobs
 **Status:** ✅ Complete
 
 **Description:** Fine-tune LLMs and VLMs using Unsloth on Hugging Face on-demand cloud GPUs with UV scripts.
@@ -598,6 +635,7 @@ Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#rea
 | microservices-patterns | ✅ `eval.yaml` | ready |
 | ui | ✅ `eval.yaml` | ready |
 | scalingo | ✅ `eval.yaml` | ready |
+| prime-rl | ✅ `eval.yaml` | ready |
 
 ### Running locally (no CI)
 
@@ -649,6 +687,7 @@ Contributions are welcome! To add a new skill:
 - [x] Microservices patterns skill
 - [x] Security best practices skill
 - [x] Performance optimization skill
+- [x] prime-rl post-training skill
 - [ ] MCP server authoring skill
 - [ ] RAG patterns skill (retrieval architecture deep dive)
 - [ ] LLM evaluation & observability skill (Langfuse, evals)
@@ -663,6 +702,7 @@ Contributions are welcome! To add a new skill:
 - [Model Context Protocol](https://modelcontextprotocol.io/) - Standard for connecting AI systems
 - [Scalingo](https://scalingo.com/) - European Platform-as-a-Service
 - [Unsloth](https://github.com/unslothai/unsloth) - Fast LLM fine-tuning
+- [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) - Asynchronous RL post-training at scale
 - [Adaption](https://docs.adaptionlabs.ai/) - Synthetic data augmentation platform
 - [OWASP Top 10](https://owasp.org/Top10/) - Web application security risks
 - [Pact](https://pact.io/) - Consumer-driven contract testing

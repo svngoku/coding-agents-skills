@@ -121,3 +121,4 @@ when a skill drops below its `threshold`.
 | microservices-patterns | ✅ | code-gen | ready |
 | ui | ✅ | code-gen | ready |
 | scalingo | ✅ | code-gen | ready |
+| prime-rl | ✅ | code-gen | ready |
