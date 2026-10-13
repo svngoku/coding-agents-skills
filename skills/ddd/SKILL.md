@@ -82,7 +82,7 @@ Select tactical building blocks based on needs:
 
 ## Project Structure Template
 
-```
+```text
 src/
 ├── domain/                    # Pure domain logic (no dependencies)
 │   ├── model/                 # Entities, Value Objects, Aggregates

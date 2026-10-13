@@ -9,6 +9,7 @@
 #   ./scripts/run-evals.sh --mode=regression    # 30 trials
 #   ./scripts/run-evals.sh --validate           # verify graders against reference solutions
 #   ./scripts/run-evals.sh langchain --mode=reliable --validate
+#   ./scripts/run-evals.sh langchain --agent=gemini  # other flags pass through to skillgrade
 #
 # Requires: skillgrade (npm i -g skillgrade) and an agent. The agent comes from
 # eval.yaml defaults (opencode) or --agent=gemini|claude|codex|acp overrides;
@@ -22,12 +23,14 @@ OUT_DIR="$REPO_ROOT/.evals"
 SKILL=""
 MODE="smoke"
 VALIDATE=0
+EXTRA_ARGS=()
 
 for arg in "$@"; do
   case "$arg" in
     --mode=*) MODE="${arg#--mode=}" ;;
     --validate) VALIDATE=1 ;;
-    -h|--help) sed -n "2,15p" "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n "2,16p" "${BASH_SOURCE[0]}"; exit 0 ;;
+    -*) EXTRA_ARGS+=("$arg") ;;
     *) SKILL="$arg" ;;
   esac
 done
@@ -47,7 +50,11 @@ if [ -n "$SKILL" ]; then
   [ -f "$DIR/eval.yaml" ] || { echo "no eval.yaml in $DIR" >&2; exit 1; }
   SKILL_DIRS=("$DIR")
 else
-  mapfile -t SKILL_DIRS < <(find "$REPO_ROOT/skills" -name eval.yaml -not -path "*/node_modules/*" -exec dirname {} \; | sort)
+  # Plain glob loop instead of mapfile: macOS ships bash 3.2, which lacks mapfile.
+  SKILL_DIRS=()
+  for f in "$REPO_ROOT"/skills/*/eval.yaml; do
+    [ -f "$f" ] && SKILL_DIRS+=("$(dirname "$f")")
+  done
   [ "${#SKILL_DIRS[@]}" -gt 0 ] || { echo "no skill has an eval.yaml yet"; exit 0; }
 fi
 
@@ -58,6 +65,7 @@ for dir in "${SKILL_DIRS[@]}"; do
   name="$(basename "$dir")"
   args=(--"$MODE" --ci --provider=local --output="$OUT_DIR/$name")
   [ "$VALIDATE" -eq 1 ] && args+=(--validate)
+  [ "${#EXTRA_ARGS[@]}" -gt 0 ] && args+=("${EXTRA_ARGS[@]}")
   echo "==> $name ($MODE, provider=local)"
   if (cd "$dir" && skillgrade "${args[@]}"); then
     echo "    ✓ $name passed"

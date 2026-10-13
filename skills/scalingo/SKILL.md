@@ -85,7 +85,7 @@ By default, the `web` process type scales to 1 × M container. All other process
 
 A `Procfile` at repo root declares how each process type starts:
 
-```
+```text
 web: gunicorn app:app --bind 0.0.0.0:$PORT
 worker: celery -A tasks worker --loglevel=INFO
 release: python manage.py migrate
@@ -287,7 +287,7 @@ Scalingo is intentionally compatible with the Heroku workflow: `Procfile`, build
 
 A common gotcha: Scalingo's git deploy accepts only `master` and `main` — map other branches with `local-branch:main` syntax.
 
-## Common pitfalls
+## Anti-Patterns to Avoid
 
 - **New process type doesn't start after deploy** — every process type except `web` defaults to 0. Run `scalingo scale <name>:1:M`.
 - **`env-set` seemed to have no effect** — env changes don't auto-restart. Run `scalingo restart`.

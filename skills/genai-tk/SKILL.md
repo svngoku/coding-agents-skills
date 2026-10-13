@@ -9,7 +9,7 @@ description: Build GenAI and agentic applications with the genai-tk toolkit (htt
 
 The mental model:
 
-```
+```text
 config/*.yaml ──► global_config() ──► Factory ──► LangChain object ──► your code
 ```
 

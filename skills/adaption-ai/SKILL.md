@@ -9,7 +9,7 @@ Build dataset augmentation pipelines with [Adaption's Adaptive Data](https://doc
 
 ## Quick Reference
 
-```
+```bash
 pip install adaption
 ```
 

@@ -14,7 +14,7 @@ small (30%) judgment component for things static checks can't see.
 
 Every skill that ships an evaluation follows this layout:
 
-```
+```text
 skills/<name>/
 ├── SKILL.md                  # unchanged
 ├── eval.yaml                 # the skillgrade harness (small; uses file references)

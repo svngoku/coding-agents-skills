@@ -6,20 +6,27 @@ This document contains instructions for AI coding agents managing this repositor
 
 This is a **curated collection of specialized skills for AI coding agents**. Each skill lives in `skills/<skill-name>/` and is designed to be loaded by agents to enhance their capabilities in specific domains (frameworks, deployment platforms, design patterns, etc.).
 
-The repo is **documentation-first**: the primary artifact is Markdown. There is no build system, no tests, no dependencies. Quality is ensured through consistent structure and peer review.
+The repo is **documentation-first**: the primary artifact is Markdown. There is no build system, no CI, and no runtime dependencies. Quality is ensured through consistent structure, peer review, and optional [skillgrade](https://github.com/mgechev/skillgrade) evaluations that every skill ships (see `docs/eval-guidelines.md`).
 
 ## Repository Structure
 
-```
+```text
 coding-agents-skills/
 ├── skills/
 │   ├── <skill-name>/          # One directory per skill
 │   │   ├── SKILL.md           # REQUIRED — core skill definition
 │   │   ├── references/        # OPTIONAL — deep-dive docs
 │   │   ├── scripts/           # OPTIONAL — runnable example scripts
-│   │   ├── eval.yaml          # OPTIONAL — skillgrade evaluation harness
-│   │   └── AGENTS.md          # OPTIONAL — skill-specific agent notes
+│   │   ├── AGENTS.md          # OPTIONAL — skill-specific agent notes
+│   │   ├── eval.yaml          # EVAL — skillgrade harness (all skills ship one)
+│   │   ├── instructions/      # EVAL — agent task prompts
+│   │   ├── graders/           # EVAL — deterministic graders (python3, stdlib only)
+│   │   ├── rubrics/           # EVAL — LLM rubric criteria
+│   │   ├── solutions/         # EVAL — reference solutions for --validate
+│   │   └── fixtures/          # EVAL — OPTIONAL input files copied into the workspace
 │   └── ...
+├── docs/eval-guidelines.md    # Eval layout and authoring rules
+├── scripts/run-evals.sh       # Local eval runner
 ├── README.md                  # REQUIRED — human-facing overview
 ├── AGENTS.md                  # THIS FILE
 └── LICENSE                    # REQUIRED — MIT
@@ -222,19 +229,23 @@ When editing files in this repo:
 - No HTML in Markdown except for `<details>` / `<summary>` when necessary
 - Line length: prefer under 120 chars, but don't hard-wrap prose
 
-## No Build, No Test, No Deploy
+## No Build, No CI, No Deploy
 
 This repository has:
 - **No build system** — Markdown is the artifact
-- **No tests** — Quality ensured through structure and review
-- **No CI/CD** — Manual commits
-- **No dependencies** — Pure documentation
+- **No CI/CD** — Manual commits; evaluations run locally
+- **No runtime dependencies** — Graders use the Python standard library only
+- **Evaluations** — Every skill ships a skillgrade harness, run with `./scripts/run-evals.sh`
 
-Treat it as a **documentation codebase**. The "tests" are:
+Treat it as a **documentation codebase**. The structural checks are:
 1. Does `SKILL.md` load correctly in an agent framework?
 2. Are all relative links valid?
 3. Is YAML frontmatter parseable?
 4. Does README match the actual directory structure?
+
+When you change a skill's eval harness (task, grader, rubric, or solution), run
+`./scripts/run-evals.sh <skill> --validate` to confirm the grader still scores the reference
+solution correctly. Follow `docs/eval-guidelines.md` when adding a harness to a new skill.
 
 ## When in Doubt
 

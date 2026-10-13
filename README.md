@@ -19,12 +19,11 @@ Each skill is self-contained with comprehensive documentation, reference materia
 
 ## 🗂️ Project Structure
 
-```
+```text
 coding-agents-skills/
 ├── skills/
 │   ├── adaption-ai/                    # Adaption AI SDK for synthetic data augmentation
 │   │   ├── SKILL.md
-│   │   ├── eval.yaml                   # skillgrade evaluation harness
 │   │   ├── references/
 │   │   │   ├── api-reference.md
 │   │   │   └── guides.md
@@ -57,7 +56,7 @@ coding-agents-skills/
 │   │       ├── typescript-patterns.md
 │   │       └── code-review.md
 │   │
-│   ├── genai-tk-skill/                 # GenAI Toolkit (YAML-driven agent framework)
+│   ├── genai-tk/                       # GenAI Toolkit (YAML-driven agent framework)
 │   │   ├── SKILL.md
 │   │   ├── genai-tk-skill.skill        # Packaged skill archive (zip)
 │   │   └── references/
@@ -138,6 +137,8 @@ coding-agents-skills/
 │   └── run-evals.sh                 # local eval runner (no CI)
 └── .gitignore                       # ignores .evals/ output
 ```
+
+Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`: `eval.yaml`, `instructions/`, `graders/`, `rubrics/`, `solutions/`, and optionally `fixtures/`. These are omitted from the tree above for readability; see [Evaluating Skills](#-evaluating-skills) and [docs/eval-guidelines.md](docs/eval-guidelines.md).
 
 ## 🎯 Available Skills
 
@@ -489,18 +490,22 @@ ls skills/ddd/references/
 
 #### With SmolAgents
 ```python
-from smolagents import CodeAgent, HfApiModel
+from pathlib import Path
 
-# Load DDD skill for architectural guidance
+from smolagents import CodeAgent, InferenceClientModel
+
+ddd_skill = Path("skills/ddd/SKILL.md").read_text()
+
 agent = CodeAgent(
     tools=[],
-    model=HfApiModel(),
-    additional_authorized_imports=["pydantic", "typing"]
+    model=InferenceClientModel(),
+    additional_authorized_imports=["pydantic", "typing"],
+    instructions=ddd_skill,  # appended to the agent's system prompt
 )
 
 result = agent.run(
     "Design a bounded context for an e-commerce order management system "
-    "following DDD principles. Use the DDD skill reference."
+    "following DDD principles."
 )
 ```
 
@@ -530,28 +535,30 @@ result = agent.invoke({
 
 ## 📋 Skill Template
 
-Each skill follows a consistent structure:
+Each skill follows a consistent structure (the authoritative version lives in [AGENTS.md](AGENTS.md)):
 
 ### SKILL.md Format
 ```markdown
 ---
-name: skill-name
-description: Detailed description of when and how to use this skill
+name: skill-name            # kebab-case, must match the directory name
+description: >
+  <trigger sentence>. Use this skill whenever the user mentions <keywords>,
+  wants to <actions>, or works with <tools/frameworks>. Also trigger for
+  <related terms>.
 ---
 
-# Skill Name
+# Human-Readable Skill Name
 
-## Overview
-[Brief introduction]
+[Brief 1-paragraph overview — what problem this skill solves]
 
 ## Quick Reference
-[Table linking to reference files]
+[Table linking to reference files — only if references/ exists]
 
-## Core Workflow
-[Step-by-step usage guide]
+## Core Workflow / Usage
+[Step-by-step instructions for the most common tasks]
 
-## Implementation Guidelines
-[Concrete examples and patterns]
+## <Topic Sections>
+[Concrete examples, code snippets, configuration samples]
 
 ## Anti-Patterns to Avoid
 [Common mistakes]
