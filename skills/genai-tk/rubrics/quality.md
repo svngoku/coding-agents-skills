@@ -1,4 +1,4 @@
-# Quality rubric — genai-tk "Research" langchain agent profile
+# Quality rubric — genai-tk "research" LangChain deep-agent profile
 
 Score the agent's solution **0.0–1.0**. Anchor: 1.0 = a profile and consumer
 snippet that a genai-tk maintainer would merge unchanged. Partial credit is
@@ -6,36 +6,40 @@ proportional — award it per criterion.
 
 ## Criteria
 
-1. **YAML-first philosophy (25%)** — the agent is *defined* in
-   `config/agents/langchain.yaml`, not hard-coded in Python. `use_agent.py`
-   only *loads* the profile via `LangchainAgent("Research", ...)` and passes a
+1. **Current schema (25%)** — the profile uses the current genai-tk schema:
+   a top-level `agents:` mapping keyed by slug, plus `agent_defaults:`.
+   Deduct heavily for the removed legacy schema (`langchain_agents:` with a
+   `profiles:` list, short tool names such as `spec: web_search`, or a
+   per-profile `skills: {directories: ...}` block, which the toolkit
+   silently ignores).
+
+2. **YAML-first philosophy (20%)** — the agent is *defined* in
+   `config/agents.yaml`, not hard-coded in Python. `use_agent.py` only
+   *loads* the profile via `LangchainAgent("research", ...)` and passes a
    small override. Python code must not redefine the agent, its tools, or its
    wiring.
 
-2. **model_id@provider discipline (15%)** — every model reference uses the
-   canonical `model_id@provider` form (e.g. `gpt_41@openai`). No bare model
-   names (like `gpt-4o-mini`), no placeholders such as `<your-model>`.
+3. **Profile completeness (35%)** — the `research` profile is a complete
+   `deep` LangChain agent. Deduct proportionally for each missing or wrong
+   field: `harness: langchain`, `type: deep`, `llm` in model_id@provider
+   form, `enable_planning: true`, `enable_file_system: true`, a search tool
+   referenced by its qualified factory path (for example
+   `genai_tk.agents.tools.langchain.search_tools_factory.create_search_function`),
+   `mcp_servers: [filesystem]`, `skill_directories` under
+   `${paths.project}/skills`, and `checkpointer: {type: memory}`.
 
-3. **Profile completeness (40%)** — the Research profile is a complete `deep`
-   agent. Deduct proportionally for each missing or wrong field:
-   `type: deep`, `llm` in model_id@provider format, `enable_planning: true`,
-   `enable_file_system: true`, a `web_search` tool with a sensible provider
-   config, `mcp_servers` listing at least one server, `skills.directories`
-   pointing at the project skills via `${paths.project}/skills`, and a
-   `checkpointer` of `type: memory`.
-
-4. **Sensible defaults & readability (10%)** — `default_profile` set
-   consistently, no redundant or contradictory settings, clean comments,
-   consistent indentation, no stray keys.
+4. **model_id@provider discipline (10%)** — every model reference uses the
+   canonical `model_id@provider` form. No bare model names and no
+   placeholders such as `<your-model>`.
 
 5. **Consumer snippet correctness (10%)** — `use_agent.py` imports
    `LangchainAgent` from `genai_tk.agents.langchain`, constructs the
-   `Research` profile, and passes at least one override (`llm=` or
-   `sandbox=`). It must be syntactically valid Python.
+   `research` profile, passes at least one real constructor override
+   (`llm=`, `sandbox=`, `checkpointer=`, ...), and is valid Python.
 
 ## Penalties
 
 - **−20%** if the solution would not run as-is: unparseable YAML, missing
   required keys, or Python syntax errors.
-- **−10%** if the profile is a copy-paste of the skill's example with a
-  renamed label but no reasoning about the configuration.
+- **−10%** for stray or contradictory settings (for example a Docker
+  `backend:` plus `sandbox="local"`, or keys that genai-tk does not read).

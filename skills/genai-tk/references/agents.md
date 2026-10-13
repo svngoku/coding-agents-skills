@@ -1,511 +1,446 @@
 # Agents — references/agents.md
 
-genai-tk bundles four agent frameworks with a shared profile system, LLM factory, MCP server registry, and sandbox config. This reference covers when to use each, how to write profiles, and how the cross-cutting features (tools, middleware, sandbox, skills) wire in.
+genai-tk runs agents through **two harnesses** that share YAML profiles, the LLM factory, MCP servers, sandboxes,
+and skills:
 
-## Quick decision tree
+| Harness | Profile `type` | Engine | Needs |
+|---------|----------------|--------|-------|
+| `langchain` (default) | `react` | `langchain.agents.create_agent` | core |
+| `langchain` | `deep` | `deepagents.create_deep_agent` (planning, file system, subagents, skills) | `harnessing` extra |
+| `langchain` | `custom` | `genai_tk.extra.langgraphs.custom_react_agent.create_custom_react_agent` | core |
+| `deerflow` | — (`mode: flash\|thinking\|pro\|ultra`) | ByteDance DeerFlow, embedded in-process | `harnessing` extra |
 
-| Need | Pick | Why |
-|------|------|-----|
-| Tool-using agent for general tasks | **ReAct** (`type: react`) | Standard Thought→Action→Observation loop, fast, works with any LLM |
-| Multi-step planning, subagent delegation, code in sandbox | **Deep** (`type: deep`) | Adds planning, file system tools, OpenSandbox backend; needs `deepagents` extra |
-| Deep web research with reports, native search & sub-agents | **Deer-flow** | ByteDance's LangGraph system, embedded in-process; best for research workflows |
-| Code-first automation, Python REPL agent, data analysis | **SmolAgents** | Generates and executes Python; supports local, Docker, and E2B backends |
+**SmolAgents is no longer an agent framework in genai-tk** (`cli agents smolagents`, `SmolAgent`, and
+`config/smolagents.yaml` are gone). Its code-first style lives on as **CodeAct**, a `deep` profile whose only tool
+is a Python executor (see below).
 
-All four share `model_id@provider` LLM identifiers, the MCP server registry, the OpenSandbox Docker integration, and `skill_directories` for on-demand domain knowledge.
+## Profiles
 
----
+### Where they live
 
-## LangChain agents — the unified entry point
+Profiles are loaded from the **first** of these that exists:
 
-`LangchainAgent` is the production-friendly wrapper. It loads a YAML profile, applies overrides, and produces a compiled LangGraph agent.
+1. `config/agents.yaml`
+2. `config/agents/*.yaml` (not recursive)
+3. `config/examples/agents/` (bundled examples)
+4. `config/examples/agents.yaml`
+
+Because the lookup stops at the first match, creating `config/agents.yaml` hides the bundled examples. Copy any
+example profiles you still want.
+
+### Schema
+
+```yaml
+agent_defaults:                    # fallbacks for harness: langchain profiles only
+  type: react
+  llm: null                        # null → llm.models.default
+  middlewares:
+    - class: genai_tk.agents.langchain.middleware.rich_middleware.RichToolCallMiddleware
+  checkpointer: {type: none}
+  backend: {type: none}
+  enable_planning: true
+  enable_file_system: true
+  skills:
+    directories: ["${paths.project}/skills"]
+  default_profile: research        # used by `cli agents run` without a profile
+
+agents:                            # dict keyed by slug; the slug is the CLI/Python key
+  research:
+    harness: langchain
+    name: "Research"               # display name (defaults to the slug)
+    type: deep
+    description: "Web researcher that writes cited reports"
+    llm: gpt-4o-mini@openai
+    system_prompt: |
+      You are an expert researcher. Plan with write_todos, cite every source.
+    tools:
+      - genai_tk.agents.tools.langchain.search_tools_factory.create_search_function:
+          verbose: false
+    mcp_servers: [filesystem]
+    skill_directories: ["${paths.project}/skills/runtime", "${paths.project}/skills/custom"]
+    middlewares:
+      - class: genai_tk.agents.langchain.middleware.rich_middleware.RichToolCallMiddleware
+      - class: genai_tk.agents.langchain.middleware.observation_truncation_middleware.ObservationTruncationMiddleware
+        max_chars: 12000
+    backend: {type: aio_sandbox, startup_timeout: 90.0}
+    checkpointer: {type: memory}
+    recursion_limit: 100
+    examples:
+      - "Compare the latest open-weight coding models"
+```
+
+LangChain profile fields (`AgentProfileConfig`):
+
+| Field | Notes |
+|-------|-------|
+| `harness` | `langchain` (default) or `deerflow` |
+| `name`, `description` | Display metadata; lookups match slug or name, case-insensitively |
+| `type` | `react` (default) \| `deep` \| `custom` |
+| `llm` | `model_id@provider` or a tag; `null` uses the global default |
+| `system_prompt`, `pre_prompt` | Keep prompts here, not in Python |
+| `tools` | Qualified factory/class/function paths (see "Tools") |
+| `mcp_servers` | Names from `mcpServers:` in `mcp_servers.yaml` |
+| `middlewares` | `- class: dotted.Path` with constructor kwargs as sibling keys |
+| `skill_directories` | Directories of `SKILL.md` files (deep agents only) |
+| `enable_planning`, `enable_file_system` | Deep-agent built-ins (both default `true`) |
+| `backend` | `none` \| `filesystem` (`root_dir`) \| `aio_sandbox` / `docker` \| `local` \| `class` (`class`, `kwargs`) |
+| `checkpointer` | `none` \| `memory` \| `class` (e.g. `class: langgraph.checkpoint.sqlite:SqliteSaver`) |
+| `subagents` | Deep-agent subagents, each with `name`, `description`, `system_prompt`, `tools` |
+| `excluded_tools` | Drop built-in tools by name |
+| `fs_permissions` | Deep-agent filesystem rules: `operations: [read\|write]`, `paths: [...]`, `mode: deny\|allow\|interrupt` |
+| `recursion_limit` | Default 100 |
+| `features`, `examples` | Shown in `cli agents list` and the webapp |
+
+Gotchas:
+
+- **Unknown keys are silently ignored.** A typo such as `skills:` on a profile (instead of `skill_directories:`)
+  does nothing. Only `agent_defaults.skills.directories` is read.
+- **Defaults are replaced, not merged.** A profile's own `middlewares:` list replaces the default list entirely.
+- The old `langchain_agents: {defaults, default_profile, profiles: [...]}` schema and `deerflow_agents:` lists are
+  **no longer supported**; one bundled file (`config/agents/langchain/browser.yaml`) still uses it and is never loaded.
+
+## Running Agents
+
+### CLI
+
+```bash
+uv run cli agents list                                   # all profiles across both harnesses
+uv run cli agents run research "Summarise this week's AI news"
+uv run cli agents run research --chat                    # REPL (forces a memory checkpointer)
+uv run cli agents run research --chat --thread-id t42    # resume a thread
+uv run cli agents run research -m claude-haiku@openrouter "..."   # LLM override
+uv run cli agents run research --mcp playwright "..."    # extra MCP server (repeatable)
+uv run cli agents run research "..." --json              # NDJSON harness events
+echo "question" | uv run cli agents run research
+uv run cli agents tui "Research Assistant"               # DeerFlow TUI (--resume, --continue)
+```
+
+`--mode` and `--sandbox/-b` only apply to DeerFlow profiles. For LangChain profiles, set `backend:` in YAML or use
+`LangchainAgent(..., sandbox="docker")`.
+
+### `LangchainAgent`
 
 ```python
 from genai_tk.agents.langchain import LangchainAgent
 
-# From a named profile
-agent = LangchainAgent("Research")
-result = agent.run("Summarise GPT-4 technical report")
+agent = LangchainAgent("research")                       # slug or display name
+print(agent.run("What is RAG?"))                         # sync
 
-# Async
-result = await agent.arun("Explain quantum computing")
-
-# Streaming
-async for chunk in agent.astream("Tell me a story"):
+result = await agent.arun("Explain it like I'm 5")
+async for chunk in agent.astream("Tell me a story"):     # yields str
     print(chunk, end="", flush=True)
+await agent.arun_shell()                                 # interactive REPL
 
-# Interactive REPL
-await agent.arun_shell()
-
-# Ad-hoc agent (no profile, llm required)
-agent = LangchainAgent(llm="gpt41mini@openai", tools=[my_tool])
-
-# Override profile fields at construction
-agent = LangchainAgent(
-    "Research",
-    llm="gpt_4o@openai",          # override the profile's llm
-    sandbox="docker",              # promote to Docker sandbox
-    details=True,                  # verbose tool-call output
-    checkpointer=True,             # persist state across turns
-)
+async with LangchainAgent("research", checkpointer=True) as agent:
+    await agent.arun("Remember: my project is called Atlas")
+    await agent.arun("What is my project called?")       # same thread ("1")
 ```
 
-`LangchainAgent` constructor fields (all optional except one of `profile_name`/`llm`):
+Constructor fields (one of `profile_name` or `llm` is required):
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `profile_name` | `str \| None` | Name of profile in `langchain.yaml` |
-| `llm` | `str \| None` | Override profile LLM, or anchor an ad-hoc agent |
-| `tools` | `list[BaseTool]` | Pre-built tools appended to profile's tool list |
-| `agent_type` | `"react" \| "deep" \| None` | Override profile type |
-| `system_prompt` | `str \| None` | Override profile system prompt |
-| `mcp_servers` | `list[str]` | Extra MCP servers to load alongside profile's |
-| `checkpointer` | `bool` | Enable in-memory checkpointing for multi-turn |
-| `details` | `bool` | Verbose `RichToolCallMiddleware` output |
-| `sandbox` | `"local" \| "docker" \| None` | `docker` promotes to deep + OpenSandbox |
-| `vnc` | `bool` | Open VNC viewer on Docker sandbox |
-| `keep_sandbox` | `bool` | Don't tear down container between runs |
-
-## Writing profiles in `langchain.yaml`
-
-```yaml
-# config/agents/langchain.yaml
-langchain_agents:
-  defaults:                          # applied to every profile unless overridden
-    type: react
-    llm: null                        # null → use llm.default from baseline.yaml
-    tools: []
-    middlewares: []
-    checkpointer: { type: none }
-    backend: { type: none }
-    mcp_servers: []
-    skills: { directories: [] }
-
-  default_profile: "Research"        # used when -p is omitted
-
-  profiles:
-    - name: "Research"
-      type: deep
-      llm: gpt_41@openai
-      enable_planning: true
-      enable_file_system: true
-      tools:
-        - spec: web_search
-          config: { provider: serper, max_results: 5 }
-      mcp_servers: [tavily-mcp]
-      skills:
-        directories:
-          - ${paths.project}/skills
-      backend:
-        type: aio_sandbox
-        opensandbox_server_url: http://localhost:8080
-        startup_timeout: 90.0
-      checkpointer:
-        type: memory                 # memory | postgres | sqlite
-
-    - name: "Coding"
-      type: react
-      llm: gpt_4o@openai
-      tools:
-        - spec: filesystem_tools
-          config: { allowed_dirs: ["/home", "/tmp"] }
-      middlewares:
-        - class: genai_tk.agents.langchain.middleware.rich_middleware.RichToolCallMiddleware
-          details: true
-
-    - name: "DataAnalysis"
-      type: react
-      llm: gpt_4o@openai
-      tools:
-        - spec: sql_tools
-          config:
-            database: analytics.db
-            schema: public
-            include_tables: ["users", "orders"]
-        - spec: dataframe_tools
-```
-
-Key fields:
-
-- `type`: `react` | `deep` | `custom`
-- `llm`: model identifier (`model_id@provider` or a tag); `null` falls back to `llm.default`
-- `tools`: list of `{ spec: name, config: {...} }` entries — see "Tool specs" below
-- `mcp_servers`: names from `mcp_servers.yaml` to load as tools
-- `middlewares`: ordered list of class+kwargs entries; class path uses dotted notation
-- `checkpointer`: state persistence (`memory` | `postgres` | `sqlite` | `none`)
-- `backend`: execution backend for deep agents (`aio_sandbox` | `class` | `none`)
-- `skills.directories`: paths whose `SKILL.md` files are exposed via `SkillsMiddleware`
-
-## Agent types
-
-### ReAct (default)
-
-Standard Thought → Action → Observation loop. Best for general tool-use tasks. No extra dependencies beyond `langchain`/`langgraph`.
-
-```yaml
-- name: "General"
-  type: react
-  llm: gpt_4o@openai
-  tools:
-    - spec: web_search
-    - spec: calculator
-```
-
-### Deep
-
-Adds planning, subagent delegation, and an optional Docker sandbox. **Requires `pip install deepagents`** (or include in your `pyproject.toml`). Best for research, multi-step analysis, anything that benefits from "make a plan, then execute it."
-
-```yaml
-- name: "Research"
-  type: deep
-  llm: gpt_41@openai
-  enable_planning: true
-  enable_file_system: true
-  backend:
-    type: aio_sandbox
-    opensandbox_server_url: http://localhost:8080
-  skills:
-    directories:
-      - ${paths.project}/skills
-  tools:
-    - spec: web_search
-    - spec: filesystem_tools
-```
-
-Deep agents in Docker sandbox automatically bind-mount skill directories at `/mnt/skills/` (read-only), so the agent can read them via the sandboxed filesystem.
-
-### Custom
-
-Functional API agent built with LangGraph for maximum flexibility. Best when you need a non-standard graph topology.
-
-```yaml
-- name: "Custom"
-  type: custom
-  llm: gpt_4o@openai
-```
-
-Implement the construction in `genai_tk.extra.graphs.custom_react_agent.create_custom_react_agent` (or your own factory and reference it).
-
----
-
-## Tool specs
-
-Tools are loaded from `tool_specs.py` factories. Each entry is `{ spec: name, config: {...} }`:
-
-| Spec | Purpose |
-|------|---------|
-| `web_search` | Web search (provider configurable: `serper`, `tavily`, etc.) |
-| `calculator` | Math expressions |
-| `filesystem_tools` | File read/write within allowed dirs |
-| `sql_tools` | SQL database query (LangChain SQL agent under the hood) |
-| `dataframe_tools` | Pandas/Polars manipulation |
-| `python_repl` | Sandboxed Python execution |
-| `browser_use` | Browser automation (`browser_fill_credential` for credentials) |
-| `yfinance_tools` | Financial data via yfinance |
-
-You can also append pre-built `BaseTool` instances at construction:
+| `profile_name` | `str \| None` | First positional argument |
+| `llm` | `str \| None` | Override the profile's LLM, or anchor an ad-hoc agent with no profile |
+| `tools` | `list[BaseTool]` | Appended to the profile's tools |
+| `agent_type` | `"react" \| "deep" \| "custom" \| None` | Override the profile type |
+| `system_prompt` | `str \| None` | Override |
+| `mcp_servers` | `list[str]` | Extra MCP servers |
+| `extra_middlewares` | `list[str]` | Short names: `AnonymizationMiddleware`, `RichToolCallMiddleware`, `EmptyResponseRetryMiddleware`, `DeduplicateToolCallsMiddleware`, `ObservationTruncationMiddleware`, `WrapUpMiddleware` |
+| `checkpointer` | `bool` | In-memory checkpointing; the thread id is fixed at `"1"` |
+| `details` | `bool` | Verbose tool-call panels |
+| `sandbox` | `"local" \| "docker" \| None` | `docker` sets a Docker backend and promotes the profile to `deep` |
+| `vnc`, `keep_sandbox` | `bool` | Docker sandbox VNC viewer; keep the container between runs |
 
 ```python
 from langchain_core.tools import tool
 
-@tool
-def my_custom_tool(query: str) -> str:
-    """Do something custom."""
-    return f"Result: {query}"
 
-agent = LangchainAgent("Research", tools=[my_custom_tool])
+@tool
+def get_stock(sku: str) -> int:
+    """Return the stock level for a SKU."""
+    return INVENTORY.get(sku, 0)
+
+
+agent = LangchainAgent(llm="gpt-4o-mini@openai", tools=[get_stock], system_prompt="You help warehouse staff.")
 ```
 
----
+Lower level, when you need the compiled LangGraph graph or your own thread ids:
 
-## Middleware
+```python
+from genai_tk.agents.harness.profiles import load_langchain_profiles
+from genai_tk.agents.langchain.factory import create_langchain_agent
 
-Middlewares run before/after the model and around tool calls. Configure in YAML or attach in code:
+profiles = load_langchain_profiles()
+graph = await create_langchain_agent(profiles["research"], llm_override="claude-haiku@openrouter")
+await graph.ainvoke(
+    {"messages": [{"role": "user", "content": "Question"}]},
+    config={"configurable": {"thread_id": "user-123"}},
+)
+```
+
+### Harness layer — one API for LangChain and DeerFlow
+
+```python
+from genai_tk.agents.harness import create_harness, list_harness_profiles
+
+for ref in list_harness_profiles():
+    print(ref.key, ref.harness, ref.kind, ref.name)
+
+harness = create_harness("research", llm_override="claude-haiku@openrouter")
+async for event in harness.astream("Find three sources on QKD", thread_id="t1"):
+    if event.kind == "token":
+        print(event.text, end="")
+    elif event.kind == "tool_call":
+        print(f"\n→ {event.tool_name}({event.args})")
+    elif event.kind == "error":
+        print(f"\n✗ {event.message}")
+answer = await harness.arun("Follow-up question", thread_id="t1")
+await harness.aclose()
+```
+
+- `create_harness(key, *, llm_override=None, force_memory_checkpointer=False, mode_override=None,
+  sandbox_override=None, extra_mcp=None, extra_tools=None)`; `mode_override`/`sandbox_override` are DeerFlow-only.
+- `BaseHarness`: `astream(message, *, thread_id=None, context=None)`, `arun(...)`, `list_threads`, `list_models`,
+  `list_skills`, `get_graph`, `get_checkpointer`, `aclose`.
+- Events are frozen Pydantic models with a `kind` discriminator: `TokenEvent` (`text`), `ThinkingEvent`,
+  `NodeEvent`, `ToolCallEvent` (`tool_name`, `args`, `call_id`), `ToolResultEvent` (`tool_name`, `content`),
+  `ArtifactEvent`, `ClarificationEvent`, `UsageEvent`, `ErrorEvent` (`message`), `EndEvent`.
+- `context=` propagates user/tenant identity to tools and middlewares for access control.
+- `genai_tk.agents.harness.chat_repl.run_chat_repl` is the REPL used by `--chat`.
+
+## Tools
+
+There are **no short tool names** (`web_search`, `calculator`, `spec:` entries are gone). Each entry is a qualified
+path, resolved by `UnifiedToolSpec`:
 
 ```yaml
-middlewares:
-  - class: genai_tk.agents.langchain.middleware.rich_middleware.RichToolCallMiddleware
-    details: true
-
-  - class: genai_tk.agents.langchain.middleware.anonymization_middleware:AnonymizationMiddleware
-    analyzed_fields: [PERSON, EMAIL_ADDRESS, PHONE_NUMBER, CREDIT_CARD]
-    fuzzy_deanonymize: true
-
-  - class: deepagents.middleware.summarization.SummarizationMiddleware
-    model: gpt-35-turbo@openai
-    trigger: ["tokens", 4000]
+tools:
+  - my_pkg.tools.make_tools                              # bare factory/function path
+  - my_pkg.tools:MyToolClass                             # class path
+  - genai_tk.agents.tools.langchain.search_tools_factory.create_search_function:
+      verbose: false                                     # single-key dict → kwargs
+  - factory: genai_tk.agents.tools.langchain.rag_tool_factory.create_rag_tool_from_config
+    config: {retriever: docs, tool_name: search_docs, top_k: 5}   # target key + sibling kwargs
 ```
 
-Built-in middlewares (in `genai_tk.agents.langchain.middleware`):
+Target keys: `tool`, `factory`, `class`, `function`, `target`.
 
-- **`RichToolCallMiddleware`** — pretty-printed tool-call traces. Set `details: true` for full panels per call.
-- **`AnonymizationMiddleware`** — Presidio + Faker reversible PII redaction. PII is replaced before the LLM and restored in responses. See `docs/middleware-pii-and-routing.md` in the repo for the full config.
-- **`SensitivityRouterMiddleware`** — routes sensitive conversations to a "safer" LLM based on content classification.
-- **`empty_response_retry`** — retries on empty/null model output.
-- **`SkillsMiddleware`** — exposes `SKILL.md` files from configured directories for the agent to read on demand. The cornerstone of the project's "skills over giant system prompts" philosophy.
+Built-in factories:
 
----
+| Factory | Provides |
+|---------|----------|
+| `genai_tk.agents.tools.langchain.search_tools_factory.create_search_function` / `create_search_tool` / `create_webpage_tool` | Web search and page fetch |
+| `genai_tk.agents.tools.langchain.sql_tool_factory.create_sql_tool_from_config` / `create_sql_toolkit_tools` | SQL querying |
+| `genai_tk.agents.tools.langchain.rag_tool_factory.create_rag_tool_from_config` | Retriever as a tool (see [rag.md](rag.md)) |
+| `genai_tk.agents.tools.python_executor.tool.create_python_executor_tools` | CodeAct `python_interpreter` |
+| `genai_tk.agents.tools.sandbox_browser.factory.create_sandbox_browser_tools` | Browser inside the Docker sandbox |
+| `genai_tk.agents.tools.direct_browser.factory.create_direct_browser_tools` | Host Playwright browser (`browser` extra) |
 
-## MCP server integration
+Writing your own: return a LangChain `BaseTool` or `@tool` function (or a list of them) from a `create_*_tools()`
+factory in your package, validate inputs at the boundary, and reference the factory from YAML.
 
-[Model Context Protocol](https://modelcontextprotocol.io) servers expose tools that any genai-tk agent can load:
+Browser tools include `browser_navigate`, `browser_click`, `browser_type`, `browser_fill_credential`,
+`browser_read_page`, `browser_screenshot`, `browser_evaluate`, and more. **Always use `browser_fill_credential`
+for secrets**, never `browser_type`.
+
+## CodeAct
+
+CodeAct agents act by writing Python executed in an in-process AST sandbox. Sibling tools are injected as plain
+Python functions; `print()` output is the observation and `final_answer(x)` ends the run.
+
+```yaml
+agents:
+  codeact:
+    harness: langchain
+    name: "CodeAct"
+    type: deep
+    system_prompt: |
+      Solve tasks only by writing Python with the python_interpreter tool.
+      Tools such as web_search are Python functions. Call final_answer(result) when done.
+    tools:
+      - genai_tk.agents.tools.python_executor.tool.create_python_executor_tools:
+          tools:
+            - genai_tk.agents.tools.langchain.search_tools_factory.create_search_tool
+    enable_file_system: false
+
+  codeact-orchestrator:                      # deep agent delegating code work to a subagent
+    harness: langchain
+    type: deep
+    tools: []
+    subagents:
+      - name: codeact
+        description: "Solves tasks by writing Python in a sandbox."
+        system_prompt: "Write Python, print observations, finish with final_answer(x)."
+        tools:
+          - genai_tk.agents.tools.python_executor.tool.create_python_executor_tools:
+              tools: [genai_tk.agents.tools.langchain.search_tools_factory.create_search_tool]
+```
+
+The bundled versions are in `config/examples/agents/codeact.yaml`.
+
+## Middlewares
+
+All live in `genai_tk.agents.langchain.middleware`:
+
+| Middleware | Purpose |
+|------------|---------|
+| `rich_middleware.RichToolCallMiddleware` | Pretty tool-call traces (`details: true` for full panels) |
+| `rich_middleware.ToolCallLimitMiddleware` | Cap tool calls (`run_limit`, `thread_limit`, `exit_behavior`) |
+| `empty_response_retry.EmptyResponseRetryMiddleware` | Retry empty model output; **always prepended automatically** |
+| `deduplicate_middleware.DeduplicateToolCallsMiddleware` | Drop repeated identical tool calls |
+| `observation_truncation_middleware.ObservationTruncationMiddleware` | Truncate long tool outputs (`max_chars`) |
+| `prompt_cache.PromptCacheMiddleware` | Mark the static prompt prefix cacheable (Anthropic, OpenRouter passthrough) |
+| `wrap_up_middleware.WrapUpMiddleware` | Escalating soft/hard limits that force convergence before the recursion limit |
+| `anonymization_middleware.AnonymizationMiddleware` | Reversible Presidio + Faker PII redaction (`nlp` extra) |
+| `sensitivity_router_middleware.SensitivityRouterMiddleware` | Route sensitive conversations to a safer LLM |
+| `skill_marks_middleware.SkillLoadMarksMiddleware` | Records skill loads in trajectories; auto-added for deep agents with skills |
+
+Third-party middlewares work the same way, for example
+`- class: deepagents.middleware.summarization.SummarizationMiddleware`.
+
+## Skills
+
+Skills are `SKILL.md` files the agent reads **on demand** (progressive disclosure), instead of stuffing domain
+knowledge into the system prompt.
+
+- Only `type: deep` profiles load skills: `skill_directories` is passed to deepagents' native `SkillsMiddleware`.
+  React agents ignore it. genai-tk itself has no `SkillsMiddleware` class.
+- With a Docker backend, each skill directory is bind-mounted read-only at `/mnt/skills/<dirname>`.
+- DeerFlow profiles use `skill_directories` plus an optional `available_skills` filter.
+- Manage skills with `cli skills list|create|add|validate` (see [cli-and-init.md](cli-and-init.md)).
+
+## Sandbox
+
+```bash
+uv run cli sandbox start      # start the OpenSandbox server (generates its own config)
+uv run cli sandbox pull       # pre-pull the image; cuts first-run startup from ~30s to ~5s
+uv run cli sandbox status
+uv run cli sandbox list
+uv run cli sandbox stop
+```
+
+Run `start` + `pull` once per boot. The sandbox image (`ghcr.io/agent-infra/sandbox`) provides Python, Node.js,
+Chromium with VNC, and a REST file/shell API. Containers run with `ulimit core=0` and isolated LibreOffice
+profiles. Use it for any untrusted code; `local` executes on the host.
+
+```yaml
+backend:
+  type: aio_sandbox            # or docker
+  host_port: 18091
+  startup_timeout: 90.0
+  work_dir: /home/user
+  env_vars: {MY_VAR: "1"}
+```
+
+## MCP
+
+### Consuming MCP servers
 
 ```yaml
 # config/mcp_servers.yaml
-mcp_servers_config:
-  tavily-mcp:
+mcpServers:
+  filesystem:
     command: npx
-    args: ["-y", "tavily-mcp"]
-    env:
-      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "${paths.project}"]
+  playwright:
+    command: npx
+    args: ["@playwright/mcp@latest", "--headless"]
+  remote_search:
+    url: https://mcp.example.com/mcp
+    transport: streamable-http          # stdio | sse | streamable-http | http
+    headers: {Authorization: "Bearer ${oc.env:SEARCH_TOKEN}"}
+    disabled: false
 
-  math_server:
-    command: python
-    args: ["-m", "genai_tk.mcp.math_server"]
+mcpProjectServers:                      # genai-tk servers defined in tk_servers.yaml
+  chinook: {}
+  search: {disabled: true}
 ```
 
-Reference them by name from any profile:
+Reference servers by name in a profile's `mcp_servers:` or pass `--mcp NAME` on the CLI. `uv run cli info mcp-tools`
+lists the tools they expose, and `uv run cli core mcp-call` calls one directly.
+
+### Exposing tools as an MCP server
 
 ```yaml
-mcp_servers: [tavily-mcp, math_server]
-```
-
-Or override at runtime:
-
-```bash
-cli agents langchain -p Research --mcp custom_server "..."
-```
-
-Programmatically:
-
-```python
-agent = LangchainAgent("Research", mcp_servers=["custom_server"])
-```
-
----
-
-## Sandbox — OpenSandbox Docker
-
-Three sandbox modes:
-
-| Mode | Purpose |
-|------|---------|
-| `local` | Run code in the host process (development, trusted code) |
-| `docker` | OpenSandbox Docker container — full isolation, Chromium, Python, Node.js, REST file/shell API, VNC |
-| (none) | Agent runs without code execution |
-
-**One-time setup:**
-
-```bash
-uv add opensandbox-server
-opensandbox-server init-config ~/.sandbox.toml --example docker
-
-# Warm up (cuts container startup ~28s → ~5s)
-cli sandbox start
-cli sandbox pull
-cli sandbox status
-```
-
-**Use with any agent:**
-
-```bash
-cli agents langchain  -p Research --sandbox docker "Write & run Python"
-cli agents deerflow   -p "Research Assistant" --sandbox docker --chat
-cli agents smolagents --executor docker "Install pandas and analyse data.csv"
-```
-
-In code:
-
-```python
-from genai_tk.agents.langchain import LangchainAgent
-agent = LangchainAgent(llm="gpt41mini@openai", sandbox="docker")
-await agent.arun("Write a Python script and run it")
-```
-
-The sandbox auto-mounts skill directories at `/mnt/skills/` (read-only), exposes Chromium with VNC at `localhost:8080/vnc`, and provides a REST shell/file API. See the repo's `docs/sandbox_support.md` for full setup and troubleshooting.
-
----
-
-## Skills — domain knowledge on demand
-
-The project's preferred pattern for domain-specific knowledge is `SKILL.md` files loaded by `SkillsMiddleware` only when relevant — not stuffed into every system prompt.
-
-```
-skills/
-├── public/                # shipped with the toolkit / Deer-flow
-│   ├── deep-research/SKILL.md
-│   └── data-analysis/SKILL.md
-└── custom/                # your project skills
-    └── invoicing/SKILL.md
-```
-
-Profile config:
-
-```yaml
-- name: "Research"
-  type: deep
-  skills:
-    directories:
-      - ${paths.project}/skills          # all SKILL.md files under this tree
-  available_skills:                       # optional filter (deer-flow only)
-    - public/deep-research
-    - public/data-analysis
-```
-
-In Docker sandbox mode the skill directories are bind-mounted read-only at `/mnt/skills/`. Outside dev mode, skills in `$DEER_FLOW_PATH/skills` are auto-discovered by Deer-flow.
-
-Skills are markdown — they should be *capability descriptions plus examples*, not system prompts. The agent reads them only when the task seems to call for them.
-
----
-
-## Deer-flow
-
-[Deer-flow](https://github.com/bytedance/deer-flow) is ByteDance's LangGraph multi-agent system with native web search, planning, sub-agents, and reporting. genai-tk embeds it **in-process** — no separate server.
-
-**Setup (one-time):**
-
-```bash
-cli init --deer-flow                 # clones Deer-flow + installs backend
-# add to .env:
-# DEER_FLOW_PATH=~/deer-flow
-```
-
-**Modes** (set via `mode:` in profile or `--mode` flag):
-
-| Mode | Thinking | Planning | Sub-agents | Use for |
-|------|:--------:|:--------:|:----------:|---------|
-| `flash` | — | — | — | Quick fact lookup |
-| `thinking` | ✓ | — | — | Reasoning-heavy single agent |
-| `pro` | ✓ | ✓ | — | Plan + execute |
-| `ultra` | ✓ | ✓ | ✓ | Full deep research with sub-agents |
-
-**Profile** in `config/agents/deerflow.yaml`:
-
-```yaml
-deerflow_agents:
-  - name: "Research Assistant"
-    mode: pro
-    llm: gpt_41@openai             # optional — falls back to server default
-    mcp_servers: [tavily-mcp]
-    skill_directories:
-      - ${paths.project}/skills
-    available_skills:              # optional filter
-      - public/deep-research
-      - public/data-analysis
-    sandbox: local                 # local | docker
-```
-
-**CLI:**
-
-```bash
-cli agents deerflow --list                                       # profiles + modes
-cli agents deerflow --chat                                       # interactive
-cli agents deerflow -p "Research Assistant" --trace "QKD basics" # with trace
-cli agents deerflow -p "Research Assistant" --mode ultra --chat  # full deep research
-cli agents deerflow --sandbox docker -p "Research Assistant" --chat
-```
-
-**Python:**
-
-```python
-from genai_tk.agents.deer_flow.embedded_client import EmbeddedDeerFlowClient
-
-client = EmbeddedDeerFlowClient(profile="Research Assistant", mode="pro")
-async for event in client.astream("Explain quantum key distribution"):
-    print(event)
-```
-
----
-
-## SmolAgents
-
-HuggingFace's [SmolAgents](https://huggingface.co/docs/smolagents) — code-first agents that write and execute Python. Three execution backends: `local` (host process), `docker` (OpenSandbox), `e2b` (cloud, requires `E2B_API_KEY`).
-
-```bash
-cli agents smolagents "Plot the sine function and save to sine.png"
-cli agents smolagents --executor docker "Install pandas and analyse data.csv"
-cli agents smolagents --executor e2b "Scrape and summarise this webpage: ..."
-cli agents smolagents --chat                                 # interactive
-cli agents smolagents -t web_search "What's the latest in AI?"
-cli agents smolagents -t sql_tools "How many users last month?"
-```
-
-Tool flags accept the same specs as LangChain (`web_search`, `calculator`, `sql_tools`, `dataframe_tools`, `yfinance_tools`, `browser_use`).
-
-Configuration in `config/smolagents.yaml`:
-
-```yaml
-codeact_agent:
-  default:
-    type: codeact
-    llm: gpt_4o@openai
+# config/tk_servers.yaml
+mcp_expose_servers:
+  search:
+    description: "Web search tools"
     tools:
-      - web_search
-      - calculator
+      - factory: genai_tk.agents.tools.langchain.search_tools_factory.create_search_tool
+    agent:                               # optional: wrap all tools in one agent tool
+      enabled: true
+      name: run_search_agent
+      llm: gpt-4o-mini@openai
 ```
 
-Programmatic API:
-
-```python
-from genai_tk.agents.smolagents import SmolAgent
-
-agent = SmolAgent(llm="gpt_4o@openai", tools=["web_search"], executor="docker")
-result = agent.run("Scrape and summarise this URL: ...")
+```bash
+uv run cli mcpserver list
+uv run cli mcpserver start --name search --transport stdio
+uv run cli mcpserver start --name search --transport streamable-http --port 8765
+uv run cli mcpserver generate --name search      # emit a standalone server script
 ```
 
----
+The group is `mcpserver`; upstream docs and comments that say `cli mcp ...` are out of date. The implementation
+targets MCP 2.0, with compatibility shims for 1.x clients in `genai_tk.mcp.compat`.
 
-## Patterns
+## DeerFlow
 
-### Multi-turn with checkpointing
+DeerFlow profiles live under the same `agents:` dict with `harness: deerflow`. They do not inherit
+`agent_defaults`.
 
-`LangchainAgent.arun` calls the compiled agent with a fixed `thread_id="1"`, so it accumulates conversation history across calls when `checkpointer=True`. For multiple independent threads, drop down to the compiled agent and pass your own `thread_id`:
-
-```python
-# Single thread (most common case)
-agent = LangchainAgent("Research", checkpointer=True)
-await agent.arun("What is RAG?")
-await agent.arun("Explain it like I'm 5")    # remembers previous turn
-
-# Multiple threads — use the compiled agent directly
-compiled = await agent._ensure_initialized()
-await compiled.ainvoke(
-    {"messages": [{"role": "user", "content": "Question"}]},
-    config={"configurable": {"thread_id": "user_session_123"}},
-)
+```yaml
+agents:
+  "Research Assistant":
+    harness: deerflow
+    description: "Deep web research with reports"
+    mode: pro                    # flash | thinking | pro | ultra
+    llm: gpt-4o-mini@openai      # optional
+    tool_groups: [web, file, bash]
+    mcp_servers: [filesystem]
+    skill_directories: ["${paths.project}/skills"]
+    available_skills: []         # optional filter
+    sandbox: docker              # local | docker
+    plan_mode: true
+    subagent_enabled: true
+    recursion_limit: 160
 ```
 
-### Tool overrides + ad-hoc profile
+| Mode | Thinking | Planning | Sub-agents |
+|------|:--------:|:--------:|:----------:|
+| `flash` | — | — | — |
+| `thinking` | ✓ | — | — |
+| `pro` | ✓ | ✓ | — |
+| `ultra` | ✓ | ✓ | ✓ |
 
-```python
-from langchain_core.tools import tool
-
-@tool
-def get_inventory(sku: str) -> int:
-    """Look up stock for a SKU."""
-    return INVENTORY.get(sku, 0)
-
-agent = LangchainAgent(
-    llm="gpt41mini@openai",
-    tools=[get_inventory],
-    system_prompt="You help warehouse staff find stock levels."
-)
+```bash
+uv run cli agents run "Research Assistant" --mode ultra --chat
+uv run cli agents run "Research Assistant" --sandbox docker "Explain QKD"
+uv run cli agents tui "Research Assistant" --continue
 ```
 
-### Loading config + dispatching by profile name
+Install with the `harnessing` extra; `DEER_FLOW_PATH` and `cli init --deer-flow` are no longer needed. Global
+DeerFlow settings go under a top-level `deerflow:` key (see `config/examples/deerflow.yaml`). From Python, use
+`create_harness("Research Assistant")` rather than the low-level `EmbeddedDeerFlowClient`.
 
-For lower-level access to the profile system:
+## Trajectories and Monitoring
 
-```python
-from genai_tk.agents.langchain.config import load_unified_config, resolve_profile
-from genai_tk.agents.langchain.factory import create_langchain_agent
+Every deep-agent run is recorded in an ATOF trajectory store under `<data_root>/trajectories/` (scope tree, tool
+args and results, skill loads, token usage).
 
-config = load_unified_config()
-profile = resolve_profile(config, "Research")
-compiled_agent = await create_langchain_agent(profile)
+```bash
+uv run cli trajectory list
+uv run cli trajectory tui                # interactive step-by-step replay
+uv run cli trajectory show <id>
+uv run cli trajectory diff <a> <b>
+uv run cli trajectory stats
+uv run cli trajectory prune
 
-result = await compiled_agent.ainvoke({
-    "messages": [{"role": "user", "content": "Query"}]
-})
+uv run cli monitoring status             # LangSmith / Langfuse / OTLP / local backends
+uv run cli monitoring start              # self-hosted Langfuse (Docker)
+uv run cli agents run research "..." --trace
 ```
 
-This is what `LangchainAgent` does internally — drop down to it only when you need to inspect or mutate the resolved profile before compiling.
+Tracing backends are configured under `monitoring.backends` (see `config/examples/monitoring.yaml`); Langfuse needs
+the `monitoring` extra.

@@ -1,13 +1,9 @@
-"""Load the Research profile from config/agents/langchain.yaml and run it."""
+"""Load the research profile from config/agents.yaml and run it."""
+
 from genai_tk.agents.langchain import LangchainAgent
 
-# Profile "Research" comes from config/agents/langchain.yaml.
-# Overrides demonstrate the model_id@provider format and the Docker sandbox.
-agent = LangchainAgent(
-    "Research",
-    llm="gpt_4o@openai",
-    sandbox="docker",
-)
+# The profile drives the agent; only the model is overridden here.
+agent = LangchainAgent("research", llm="claude-haiku@openrouter")
 
-result = agent.run("Summarise recent AI news")
+result = agent.run("Summarise this week's open-weight model releases")
 print(result)
