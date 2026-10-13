@@ -1,0 +1,25 @@
+# config/agents.yaml — genai-tk agent profiles
+# This file takes precedence over config/agents/*.yaml and the bundled examples.
+
+agent_defaults:
+  default_profile: research        # used by `cli agents run` without a profile
+
+agents:
+  research:                        # slug: `cli agents run research`, LangchainAgent("research")
+    harness: langchain
+    name: "Research"
+    type: deep
+    description: "Web researcher that writes cited reports"
+    llm: gpt-4o-mini@openai
+    system_prompt: |
+      You are an expert researcher. Plan with write_todos, cite every source.
+    enable_planning: true
+    enable_file_system: true
+    tools:
+      - genai_tk.agents.tools.langchain.search_tools_factory.create_search_function:
+          verbose: false
+    mcp_servers: [filesystem]      # defined under mcpServers: in config/mcp_servers.yaml
+    skill_directories:
+      - ${paths.project}/skills
+    checkpointer:
+      type: memory

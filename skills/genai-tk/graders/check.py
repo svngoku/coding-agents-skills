@@ -3,14 +3,14 @@
 
 Runs from the agent's workspace (cwd). Checks the two required artifacts:
 
-  config/agents/langchain.yaml   a genai-tk langchain_agents profile with a
-                                 "Research" deep agent (model_id@provider llm,
-                                 planning, file system, web_search tool,
-                                 mcp_servers, skills.directories, memory
-                                 checkpointer)
-  use_agent.py                   a snippet importing LangchainAgent and
-                                 constructing LangchainAgent("Research", ...)
-                                 with at least one override
+  config/agents.yaml   current genai-tk schema: agent_defaults.default_profile
+                       plus an agents: dict holding a "research" deep
+                       LangChain profile (model_id@provider llm, planning,
+                       file system, qualified search tool factory,
+                       mcp_servers, skill_directories, memory checkpointer)
+                       and none of the removed legacy keys
+  use_agent.py         a snippet importing LangchainAgent and constructing
+                       LangchainAgent("research", ...) with an override
 
 Python 3 standard library ONLY (no PyYAML, no network). YAML is checked with a
 small hand-rolled subset parser sufficient for genai-tk profile files; the
@@ -26,9 +26,16 @@ import json
 import os
 import sys
 
-YAML_PATH = os.path.join("config", "agents", "langchain.yaml")
+YAML_PATH = os.path.join("config", "agents.yaml")
 PY_PATH = "use_agent.py"
 PASS_BAR = 0.8
+PROFILE_SLUG = "research"
+SEARCH_FACTORY_PREFIX = "genai_tk.agents.tools.langchain.search_tools_factory."
+TOOL_TARGET_KEYS = ("tool", "factory", "class", "function", "target")
+CONSTRUCTOR_OVERRIDES = (
+    "llm", "sandbox", "checkpointer", "agent_type", "system_prompt", "tools",
+    "mcp_servers", "extra_middlewares", "details",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -168,7 +175,8 @@ def _interpret(nodes):
             if rest == "":
                 out.append(_interpret(node["children"]))
             elif _has_key(rest):
-                out.append(_mapping_from(rest, node["children"]))
+                key_col = node["indent"] + len(node["content"]) - len(rest)
+                out.append(_mapping_from(rest, node["children"], key_col))
             else:
                 out.append(_parse_scalar(rest))
         return out
@@ -186,18 +194,25 @@ def _interpret(nodes):
     return out
 
 
-def _mapping_from(first_rest, child_nodes):
-    """A sequence item that begins a mapping, e.g. '- name: X' + deeper keys."""
+def _mapping_from(first_rest, child_nodes, key_col):
+    """A sequence item that begins a mapping, e.g. '- name: X' + deeper keys.
+
+    Children aligned with the first key (indent == key_col) are sibling keys;
+    deeper children are the nested value of an empty first key, as in
+    '- pkg.factory:' followed by indented kwargs.
+    """
     m = {}
+    siblings = [n for n in child_nodes if n["indent"] <= key_col]
+    nested = [n for n in child_nodes if n["indent"] > key_col]
     key, rest = _split_key(first_rest)
     if key is not None:
         if rest == "":
-            m[key] = _interpret(child_nodes)
+            m[key] = _interpret(nested)
         elif rest.startswith("{") or rest.startswith("["):
             m[key] = _parse_flow(rest)
         else:
             m[key] = _parse_scalar(rest)
-    child_map = _interpret(child_nodes)
+    child_map = _interpret(siblings)
     if isinstance(child_map, dict):
         m.update(child_map)
     return m
@@ -231,19 +246,24 @@ def parse_yaml(text):
 # Checks
 # ---------------------------------------------------------------------------
 
-def _find_profile(parsed, name):
-    profiles = parsed.get("profiles") if isinstance(parsed, dict) else None
-    if not isinstance(profiles, list):
-        return None
-    for p in profiles:
-        if isinstance(p, dict) and p.get("name") == name:
-            return p
-    return None
-
-
 def _tools_list(profile):
     tools = profile.get("tools") if isinstance(profile, dict) else None
     return tools if isinstance(tools, list) else []
+
+
+def _tool_path(entry):
+    """Return the qualified path of a tools: entry, mirroring UnifiedToolSpec forms."""
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        for key in TOOL_TARGET_KEYS:
+            if isinstance(entry.get(key), str):
+                return entry[key]
+        if len(entry) == 1:
+            (key,) = entry.keys()
+            if "." in key or ":" in key:
+                return key
+    return None
 
 
 def _langchain_calls(tree):
@@ -287,7 +307,7 @@ def _call_profile(call):
 
 def _call_overrides(call):
     """Return the list of override keyword names present in the call."""
-    return [kw.arg for kw in call.keywords if kw.arg in ("llm", "sandbox")]
+    return [kw.arg for kw in call.keywords if kw.arg in CONSTRUCTOR_OVERRIDES]
 
 
 def _check_python(py_path, checks):
@@ -342,15 +362,20 @@ def _check_python(py_path, checks):
         )
         return
 
+    # genai-tk resolves profiles by slug or display name, case-insensitively.
     profile_hit = next(
-        (c for c in calls if _call_profile(c) == "Research"), None
+        (
+            c for c in calls
+            if isinstance(_call_profile(c), str) and _call_profile(c).lower() == PROFILE_SLUG
+        ),
+        None,
     )
     if profile_hit is None:
         used = [_call_profile(c) for c in calls]
         add(
             "constructs-research-profile",
             False,
-            f"LangchainAgent called, but no call targets the Research profile (got: {used})",
+            f"LangchainAgent called, but no call targets the research profile (got: {used})",
         )
         return
 
@@ -359,13 +384,13 @@ def _check_python(py_path, checks):
         add(
             "constructs-research-profile",
             True,
-            f"LangchainAgent('Research', ...) with override(s): {', '.join(overrides)}",
+            f"LangchainAgent('research', ...) with override(s): {', '.join(overrides)}",
         )
     else:
         add(
             "constructs-research-profile",
             False,
-            "LangchainAgent('Research') found, but no llm=/sandbox= override",
+            "LangchainAgent('research') found, but no constructor override such as llm= or sandbox=",
         )
 
 
@@ -374,13 +399,14 @@ def _check_yaml(yaml_path, checks):
         checks.append({"name": name, "passed": bool(passed), "message": msg})
 
     missing_names = (
-        "yaml-parses", "langchain-agents-key", "profile-research", "type-deep",
-        "llm-format", "enable-planning", "enable-file-system", "web-search-tool",
-        "mcp-servers-list", "skills-directories", "checkpointer-memory",
+        "yaml-parses", "agents-dict", "default-profile", "profile-research",
+        "no-legacy-schema", "harness-langchain", "type-deep", "llm-format",
+        "enable-planning", "enable-file-system", "search-tool", "mcp-servers-list",
+        "skill-directories", "checkpointer-memory",
     )
     if not os.path.isfile(yaml_path):
         for name in missing_names:
-            add(name, False, "config/agents/langchain.yaml not found")
+            add(name, False, f"{yaml_path} not found")
         return
 
     try:
@@ -397,40 +423,70 @@ def _check_yaml(yaml_path, checks):
         parsed is not None,
         "parsed as YAML (dict)" if parsed is not None else "unparseable YAML",
     )
-
     if parsed is None:
         for name in missing_names[1:]:
             add(name, False, "YAML did not parse")
         return
 
-    has_key = "langchain_agents" in parsed
+    agents = parsed.get("agents")
+    agents_ok = isinstance(agents, dict) and len(agents) > 0
     add(
-        "langchain-agents-key",
-        has_key,
-        "top-level langchain_agents key present"
-        if has_key
-        else "missing top-level langchain_agents key",
+        "agents-dict",
+        agents_ok,
+        "top-level agents: mapping keyed by slug"
+        if agents_ok
+        else "missing top-level agents: mapping (profiles must be a dict keyed by slug, not a list)",
     )
 
-    if not has_key:
-        for name in missing_names[2:]:
-            add(name, False, "no langchain_agents key")
-        return
+    defaults = parsed.get("agent_defaults")
+    default_profile = defaults.get("default_profile") if isinstance(defaults, dict) else None
+    dp_ok = isinstance(default_profile, str) and default_profile.lower() == PROFILE_SLUG
+    add(
+        "default-profile",
+        dp_ok,
+        f"agent_defaults.default_profile: {default_profile}"
+        if dp_ok
+        else f"agent_defaults.default_profile is {default_profile!r}, expected '{PROFILE_SLUG}'",
+    )
 
-    agents = parsed["langchain_agents"]
-    profile = _find_profile(agents, "Research") if isinstance(agents, dict) else None
+    profile = agents.get(PROFILE_SLUG) if agents_ok else None
+    profile_ok = isinstance(profile, dict)
     add(
         "profile-research",
-        profile is not None,
-        "profiles list contains a profile named 'Research'"
-        if profile is not None
-        else "no profile named 'Research' in langchain_agents.profiles",
+        profile_ok,
+        f"agents.{PROFILE_SLUG} profile present"
+        if profile_ok
+        else f"no '{PROFILE_SLUG}' key under agents:",
     )
 
-    if profile is None:
-        for name in missing_names[3:]:
-            add(name, False, "no Research profile")
+    legacy = []
+    if "langchain_agents" in parsed:
+        legacy.append("top-level langchain_agents:")
+    if "deerflow_agents" in parsed:
+        legacy.append("top-level deerflow_agents:")
+    if profile_ok:
+        if "skills" in profile:
+            legacy.append("profile-level skills: (use skill_directories)")
+        if any(isinstance(t, dict) and "spec" in t for t in _tools_list(profile)):
+            legacy.append("spec: tool entries (use qualified factory paths)")
+    add(
+        "no-legacy-schema",
+        not legacy,
+        "no removed legacy keys" if not legacy else "legacy schema found: " + "; ".join(legacy),
+    )
+
+    if not profile_ok:
+        for name in missing_names[5:]:
+            add(name, False, f"no {PROFILE_SLUG} profile")
         return
+
+    harness = profile.get("harness", "langchain")
+    harness_ok = harness == "langchain"
+    add(
+        "harness-langchain",
+        harness_ok,
+        "harness: langchain" if harness_ok else f"harness is {harness!r}, expected 'langchain'",
+    )
 
     type_ok = profile.get("type") == "deep"
     add(
@@ -440,7 +496,12 @@ def _check_yaml(yaml_path, checks):
     )
 
     llm = profile.get("llm")
-    llm_ok = isinstance(llm, str) and "@" in llm and llm.strip() != ""
+    llm_ok = (
+        isinstance(llm, str)
+        and llm.count("@") == 1
+        and all(part.strip() for part in llm.split("@"))
+        and "<" not in llm
+    )
     add(
         "llm-format",
         llm_ok,
@@ -448,46 +509,39 @@ def _check_yaml(yaml_path, checks):
     )
 
     plan_ok = profile.get("enable_planning") is True
-    add(
-        "enable-planning",
-        plan_ok,
-        "enable_planning: true" if plan_ok else "enable_planning is not true",
-    )
+    add("enable-planning", plan_ok, "enable_planning: true" if plan_ok else "enable_planning is not true")
 
     fs_ok = profile.get("enable_file_system") is True
-    add(
-        "enable-file-system",
-        fs_ok,
-        "enable_file_system: true" if fs_ok else "enable_file_system is not true",
-    )
+    add("enable-file-system", fs_ok, "enable_file_system: true" if fs_ok else "enable_file_system is not true")
 
-    tools = _tools_list(profile)
-    web_ok = any(
-        isinstance(t, dict) and t.get("spec") == "web_search" for t in tools
-    )
+    paths = [_tool_path(t) for t in _tools_list(profile)]
+    search_ok = any(isinstance(p, str) and p.startswith(SEARCH_FACTORY_PREFIX) for p in paths)
     add(
-        "web-search-tool",
-        web_ok,
-        "tools include spec: web_search" if web_ok else "no web_search tool spec found in tools",
+        "search-tool",
+        search_ok,
+        "tools include a qualified search_tools_factory path"
+        if search_ok
+        else f"no {SEARCH_FACTORY_PREFIX}* tool entry (got: {paths})",
     )
 
     mcp = profile.get("mcp_servers")
-    mcp_ok = isinstance(mcp, list) and len(mcp) > 0
+    mcp_ok = isinstance(mcp, list) and "filesystem" in mcp
     add(
         "mcp-servers-list",
         mcp_ok,
-        f"mcp_servers: {mcp}" if mcp_ok else "mcp_servers missing or empty",
+        f"mcp_servers: {mcp}" if mcp_ok else f"mcp_servers is {mcp!r}, expected a list containing 'filesystem'",
     )
 
-    skills = profile.get("skills")
-    dirs = skills.get("directories") if isinstance(skills, dict) else None
-    dirs_ok = isinstance(dirs, list) and len(dirs) > 0 and any(
+    dirs = profile.get("skill_directories")
+    dirs_ok = isinstance(dirs, list) and any(
         isinstance(d, str) and "${paths.project}" in d and "skills" in d for d in dirs
     )
     add(
-        "skills-directories",
+        "skill-directories",
         dirs_ok,
-        f"skills.directories: {dirs}" if dirs_ok else "skills.directories missing or not pointing at ${paths.project}/skills",
+        f"skill_directories: {dirs}"
+        if dirs_ok
+        else "skill_directories missing or not pointing under ${paths.project}/skills",
     )
 
     cp = profile.get("checkpointer")

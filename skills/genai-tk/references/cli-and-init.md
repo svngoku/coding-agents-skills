@@ -1,394 +1,214 @@
-# CLI & Project Init — references/cli-and-init.md
+# CLI, Install & Project Init — references/cli-and-init.md
 
-The `cli` entry point is genai-tk's primary terminal interface. It's a Typer-based CLI with command groups loaded **dynamically from `app_conf.yaml`** — meaning your project can extend the CLI just by adding a class and one YAML line.
+The `cli` entry point (`genai_tk.main.cli:main`) is a Typer app whose command groups are **declared in
+`config/app_conf.yaml` under `cli.commands`** and resolved by dotted path. A project extends the CLI by adding one
+class and one YAML line.
 
-## Bootstrapping a project — `cli init`
+## Installation
 
-`cli init` scaffolds a complete genai-tk project. By default it generates a working Python package with example commands, an LCEL chain, a Streamlit page, and Copilot Agent support files.
+genai-tk is **not published on PyPI**. Install it from git with `uv`; Python `>=3.12` is required.
 
 ```bash
-# Full scaffold (recommended)
-uv run cli init --name "My AI Project"
-uv run cli init                                  # name from cwd
-
-# Config + Makefile only — no example code
-uv run cli init --minimal
-
-# Also clone the Deer-flow backend
-uv run cli init --deer-flow
-uv run cli init --deer-flow --path ./ext/deer-flow
-
-# Overwrite existing files
-uv run cli init --force
-
-# After init
-uv sync                                          # install generated package
+uv add "genai-tk @ git+https://github.com/tclatos/genai-tk@main"
+uv add "genai-tk[harnessing,browser] @ git+https://github.com/tclatos/genai-tk@main"   # with extras
+uv add --editable /path/to/genai-tk                                                  # local clone
 ```
 
-### What the full scaffold creates
+### Extras
+
+| Extra | Brings in | Needed for |
+|-------|-----------|-----------|
+| `harnessing` | `deepagents>=0.7.13`, `agent-sandbox`, `opensandbox`, `opensandbox-server`, `deerflow-harness[tui]` (pinned commit) | `type: deep`, DeerFlow, Docker sandbox |
+| `browser` | `playwright` | Direct (host) browser tools |
+| `nlp` | spaCy + `en_core_web_md`, Presidio, `langchain-huggingface` | PII anonymization, spaCy BM25, cross-encoder rerank |
+| `postgres` | `langchain-postgres`, psycopg | PgVector, `pg_hybrid` retriever |
+| `streamlit` | `streamlit`, `streamlit-monaco` | `just webapp` |
+| `baml` | `baml-py==0.223.0` | BAML structured extraction |
+| `chromadb` | `chromadb`, `langchain-chroma` | Chroma vector store |
+| `docling` | `docling`, `easyocr` | Docling converter in markdownize |
+| `monitoring` | `langfuse`, OpenTelemetry SDK/OTLP exporter, openinference | Langfuse / OTLP tracing |
+| `all` | Every extra above **except `monitoring`** | — |
+
+Core already includes Prefect, `prefect-yaml`, LangSmith, NeMo Relay, `mcp>=2.0`, MarkItDown, and FastEmbed.
+`dev` and `evals` are dependency groups for contributors, not extras.
+
+Feature-gated code calls `genai_tk.config_mgmt.features.require_feature("<name>")`; install a missing feature later
+with `uv sync --extra <name>`.
+
+**Do not** use `[tool.uv] override-dependencies` on genai-tk in a downstream project: it strips forwarded extras.
+Pin sibling checkouts with `[tool.uv.sources]` instead.
+
+## `cli init` — Scaffold a Project
+
+```bash
+uv init my-app && cd my-app
+uv add "genai-tk @ git+https://github.com/tclatos/genai-tk@main"
+uv run cli init --name "My Agent App"
+uv run cli init --extra harnessing --extra browser      # repeatable; runs uv sync --extra X
+uv run cli init --with-graph --graph-path ../genai-graph # knowledge-graph + benchmark scaffolding
+uv run cli init --force                                  # overwrite existing files
+```
+
+The only flags are `--name/-n`, `--extra/-e`, `--with-graph/-g`, `--graph-path`, and `--force/-f`. Upstream docs
+mention `-t/--template` presets, `--minimal`, and `--with-deer-flow`, but **these are not implemented**; the
+scaffolder always produces the agent-app layout.
+
+`init` runs `uv sync` itself and removes the `main.py` stub that `uv init` creates.
+
+### What it generates
 
 | Path | Purpose |
 |------|---------|
-| `config/` | Default YAML tree (`app_conf.yaml`, `baseline.yaml`, `providers/llm.yaml`, etc.) |
-| `Makefile` | `make webapp`, `make test`, `make example-joke`, `make example-agent` targets |
-| `<package>/` | Python package — name derived from project name (lowercased, spaces→underscores) |
-| `<package>/main/streamlit.py` | Streamlit entry point delegating to `genai_tk.webapp` |
-| `<package>/commands/example_commands.py` | `ExampleCommands` class — joke / chain / agent / deerflow |
-| `<package>/chains/joke_chain.py` | Simple LCEL chain registered with `chain_registry` |
-| `<package>/webapp/pages/demos/hello_agent.py` | ReAct agent page with chat UI + calculator tool |
-| `AGENTS.md` | Architecture overview + coding conventions for Copilot Agent |
-| `.github/copilot-instructions.md` | Always-active Copilot hints |
-| `pyproject.toml` | uv project with genai-tk dependency + scoped package discovery |
-| `README.md` | Project overview |
+| `config/` | Full default config tree (`app_conf.yaml`, `providers/`, `agents.yaml`, `webapp.yaml`, …) |
+| `justfile` | `run`, `sync`, `fmt`, `lint` (ruff + `cli skills validate --all`), `check`, `test`, `test-unit`, `skills`, `add-skill`, `webapp` |
+| `<pkg>/commands/agent_commands.py` | `AgentCommands` → `cli agent list` / `cli agent chat` (singular `agent`) |
+| `<pkg>/tools/example_tool.py` | Example LangChain tool referenced from `config/agents.yaml` |
+| `<pkg>/webapp/pages/demos/hello_agent.py`, `<pkg>/main/streamlit.py` | Streamlit demo page and entry point |
+| `skills/{runtime,development,governance,vendor,custom,community}/` | Bundled upstream skills + `custom/getting-started/SKILL.md` |
+| `AGENTS.md`, `.github/copilot-instructions.md`, `docs/SKILLS.md`, `docs/EXTENDING.md` | Coding-agent guidance |
+| `pyproject.toml` | Pinned to Python `>=3.12,<3.13`, hatchling build backend, `[tool.uv] package = true`, forwarded extras |
 
-`cli init` also **patches** several config files automatically — `app_conf.yaml` gets your package's CLI command class added to the `cli.commands` list, `webapp.yaml` gets navigation entries, etc. Re-running `cli init --force` updates these in place.
+It also patches `app_conf.yaml` (`cli.commands` gets `<pkg>.commands.agent_commands.AgentCommands`) and
+`webapp.yaml` (pages and navigation). `just run` maps to `uv run cli agent chat`.
 
-### Example commands (after `uv sync`)
+## Command Tree
 
-```bash
-uv run cli example joke "software engineers"     # simple LLM call via LCEL
-uv run cli example chain "Python devs"           # registered chain via chain_registry
-uv run cli example agent "What is 2 + 2?"        # ReAct agent with calculator tool
-uv run cli example deerflow "Explain RAG"        # requires --deer-flow init
-```
+Run `uv run cli` (no arguments) or `uv run cli --help` for the live tree. As of `7fbd7a3`:
 
-Or via `make`:
+| Group | Subcommands |
+|-------|-------------|
+| `init` | flags above |
+| `info` | `config`, `config-keys [KEY]`, `doctor [--fix]`, `models`, `llm-profile ID [--reload]`, `mcp-tools`, `commands`, `ls` |
+| `core` | `llm`, `embedd`, `similarity`, `mcp-call`, `classifier` |
+| `agents` | `run [PROFILE] [QUERY]`, `list`, `tui PROFILE` (DeerFlow only) |
+| `sandbox` | `start`, `stop`, `status`, `list`, `pull` |
+| `mcpserver` | `start`, `serve`, `list`, `generate` (`--name`, `--transport stdio\|sse\|streamable-http`, `--host`, `--port`) |
+| `rag` | `add-files`, `query`, `embed`, `delete`, `info`, `list-retrievers`, `list-configs` |
+| `workflow` | `run`, `list`, `show`, `validate`, `serve` |
+| `prefect` | `start`, `stop`, `status`, `ui` |
+| `baml` | `run`, `extract` |
+| `skills` | `list`, `add`, `create`, `validate`, `info`, `search` |
+| `trajectory` | `list`, `show`, `open`, `link`, `tui`, `tail`, `replay`, `export`, `diff`, `skills`, `stats`, `prune`, `view` |
+| `monitoring` | `status`, `start`, `stop`, `test`, `open`, `tail`, `clear` |
+| `tools` | `gpt-researcher`, `browser-agent` |
+| `test` | `unit`, `fast_integration`, `full_integration`, `all`, `evals`, `select`, `notebooks` |
 
-```bash
-make example-joke    make example-chain    make example-agent
-```
-
----
-
-## Built-in command groups
-
-After `cli init`, you have access to all bundled command groups. Run `cli` with no arguments to see the full tree, or `cli <group> --help` to drill in.
-
-### `init` — project initialisation
-Documented above.
-
-### `core` — direct LLM and chain access
+Frequently used invocations:
 
 ```bash
-cli core llm "Tell me a joke"                            # default model
-cli core llm "Explain AI" --llm gpt_4o@openai            # specific model
-cli core llm "Explain AI" --llm fast_model               # named tag
-cli core llm "Be creative" --temperature 0.8
-cli core llm "Write a poem" --stream                     # token stream
-cli core llm "Solve this maths problem" --reasoning      # thinking mode
-echo "summarise" | cli core llm --input -                # stdin
-cli core llm "Hello" --raw                               # raw LC response object
-
-cli core run my_chain "Input"                            # registered chain
+uv run cli core llm -i "tell me a joke" -m parrot_local@fake      # prompt via -i or stdin, not positional
+echo "hello" | uv run cli core llm -m gpt-4o-mini@openai --stream
+uv run cli agents run research "Explain async generators"          # profile is positional
+uv run cli agents run research --chat --thread-id t1
+uv run cli agents run research "..." --json                        # NDJSON event stream
+uv run cli info doctor --fix
 ```
 
-Options for `cli core llm`:
+Global flag `--logging` takes no value; it forces TRACE-level logs.
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--input TEXT` | `-i` | stdin | Input or `-` for stdin |
-| `--llm TEXT` | `-m` | default | Tag or `model_id@provider` |
-| `--temperature` |  | 0.0 | Sampling temperature |
-| `--stream` | `-s` | false | Stream tokens |
-| `--reasoning` |  | false | Enable thinking mode (o3, claude thinking, etc.) |
-| `--cache` |  | memory | `memory` / `sqlite` / `no_cache` |
-| `--raw` |  | false | Print raw response object |
-
-### `info` — system inspection
-
-```bash
-cli info config                                # show resolved config + API key status
-cli info models                                # list all known LLM/embeddings models
-cli info llm-profile gpt41mini@openai          # exact model lookup
-cli info llm-profile gpt-4o                    # fuzzy match
-```
-
-`info config` shows: active configuration, default LLM/embeddings/vector store, all configured tags, and API key availability per provider — invaluable for "why isn't this working?" debugging.
-
-### `agents` — agent runners
-
-```bash
-# LangChain (ReAct + Deep)
-cli agents langchain --list
-cli agents langchain --chat                              # default profile, interactive
-cli agents langchain -p Research "Deep dive topic"
-cli agents langchain --type react -p General "..."       # override agent type
-cli agents langchain --sandbox docker -p Research "..."  # run in OpenSandbox
-
-# Deer-flow
-cli agents deerflow --list
-cli agents deerflow --chat
-cli agents deerflow -p "Research Assistant" --mode ultra "..."
-
-# SmolAgents
-cli agents smolagents "Plot sine fn and save to png"
-cli agents smolagents --executor docker "Install pandas"
-cli agents smolagents -t web_search "Latest AI news?"
-cli agents smolagents --chat
-```
-
-See `references/agents.md` for profile fields, MCP servers, sandbox setup, and skills.
-
-### `rag` — retrieval-augmented generation
-
-```bash
-cli rag list-retrievers
-cli rag info <retriever_tag>
-cli rag add-files ./docs/ -r persistent
-cli rag add-files ./docs/ -r persistent \
-    --include "**/*.md" --exclude "**/drafts/**"
-cli rag query "What is hybrid search?" -r hybrid_reranked --k 10
-cli rag query "pricing" --filter '{"source":"contracts"}'
-cli rag embed persistent --text "snippet to index"
-cli rag delete persistent --force
-```
-
-See `references/rag.md` for the full retrieval reference.
-
-### `baml` — structured extraction
-
-```bash
-cli baml run ExtractResume -i "John Smith; SW engineer"
-cat resume.txt | cli baml run ExtractResume
-
-# Save result to JSON
-cli baml run FakeResume -i "Jane Doe" \
-    --out-dir ./output --out-file jane.json
-
-# Batch extract a directory of markdown files
-cli baml extract ./docs ./output \
-    --recursive --function ExtractRainbow
-
-# With filters and force re-run
-cli baml extract ./reports ./output \
-    --include 'report_*.md' --exclude '*_draft.md' \
-    --recursive --force
-```
-
-See `references/baml-structured.md` for setup and the programmatic API.
-
-### `tools` — utility commands
-
-```bash
-# PDF/DOCX/PPTX → Markdown via Prefect flow
-cli tools markdownize ./input ./output --recursive
-cli tools markdownize ./pdfs ./output --mistral-ocr        # higher-quality OCR
-cli tools markdownize ./input ./output --force             # re-process
-
-# PowerPoint → PDF
-cli tools ppt2pdf ./slides ./pdfs --recursive
-
-# GPT Researcher
-cli tools gpt-researcher "Latest AI trends 2026"
-```
-
-### `sandbox` — OpenSandbox management
-
-```bash
-cli sandbox start                              # start the daemon
-cli sandbox stop
-cli sandbox status                             # daemon health + image cache
-cli sandbox pull                               # pre-pull the Docker image
-```
-
-Run once per machine boot to cut subsequent agent startup from ~28s to ~5s.
-
-### `mcpserver` — MCP server lifecycle
-
-```bash
-cli mcpserver list                             # configured servers
-cli mcpserver start --name math_server                            # stdio
-cli mcpserver start --name weather_server --transport sse         # SSE
-cli mcpserver generate --name math_server                         # standalone script
-```
-
-### `test` — pytest wrappers
-
-```bash
-cli test unit
-cli test fast_integration
-cli test full_integration                      # requires real API keys
-```
-
-### Global flags
-
-| Flag | Description |
-|------|-------------|
-| `--logging LEVEL` | `DEBUG` / `INFO` / `WARNING` / `ERROR`. Processed before Typer. |
-| `--help` | Help on any command or group |
-
-### OmegaConf interpolation in arguments
-
-Path arguments accept config interpolation — wrap in single quotes to prevent shell expansion:
-
-```bash
-cli baml extract '${paths.data_root}/docs' '${paths.data_root}/output' \
-    --recursive --function ExtractRainbow
-```
-
-Available variables: `${paths.project}`, `${paths.config}`, `${paths.data_root}`, `${paths.home}`.
-
----
+The loader only imports modules whose dotted path contains the invoked group name, so a broken optional command
+module does not break unrelated groups. An unresolvable entry in `cli.commands` only logs a warning.
 
 ## Extending the CLI — `CliTopCommand`
 
-All command groups inherit from `CliTopCommand` and are loaded dynamically from `cli.commands` in `app_conf.yaml`. To add a new group:
-
-### Step 1 — write the command class
-
 ```python
-# src/myapp/commands_hello.py
-from typing import Annotated
+# my_pkg/commands/report_commands.py
 import typer
+
 from genai_tk.cli.base import CliTopCommand
 
 
-class HelloCommands(CliTopCommand):
-    """Greeting commands."""
-
-    description: str = "Friendly greeting commands."
+class ReportCommands(CliTopCommand):
+    """Report generation commands."""
 
     def get_description(self) -> tuple[str, str]:
-        # (group_name, help_text) — group_name becomes the top-level CLI word
-        return "hello", self.description
+        return "report", "Generate reports from project data."
 
     def register_sub_commands(self, cli_app: typer.Typer) -> None:
-        @cli_app.command()
-        def greet(
-            name: Annotated[str, typer.Argument(help="Name to greet")],
-            shout: Annotated[bool, typer.Option("--shout", help="Use uppercase")] = False,
+        @cli_app.command("weekly")
+        def weekly(
+            week: str = typer.Argument(..., help="ISO week, e.g. 2026-W41"),
+            llm: str | None = typer.Option(None, "--llm", "-m"),
         ) -> None:
-            """Greet someone by name."""
-            msg = f"Hello, {name}!"
-            print(msg.upper() if shout else msg)
+            """Write the weekly report."""
+            from my_pkg.reports import build_weekly  # import heavy deps inside the command
 
-        @cli_app.command()
-        def farewell(name: Annotated[str, typer.Argument(help="Name")]) -> None:
-            """Say goodbye."""
-            print(f"Goodbye, {name}!")
+            build_weekly(week, llm=llm)
 ```
-
-### Step 2 — register in config
 
 ```yaml
-# config/app_conf.yaml — or your project's overrides
+# config/app_conf.yaml
 cli:
   commands:
-    # … existing entries …
-    - src.myapp.commands_hello.HelloCommands
+    - genai_tk.cli.commands_core.CoreCommands
+    - genai_tk.cli.commands_info.InfoCommands
+    # ...keep the existing entries...
+    - my_pkg.commands.report_commands.ReportCommands
 ```
 
-### Step 3 — use it
+Contract:
+
+- `CliTopCommand` is a Pydantic `BaseModel` + ABC; implement `get_description() -> (name, help)` and
+  `register_sub_commands(app)`. `register()` is inherited.
+- Entries must be **dotted paths** (`pkg.module.Class`). The `module:Class` form fails validation even though an
+  upstream docstring shows it.
+- Classes are instantiated with **no arguments**; entries cannot carry kwargs. A plain function entry is called
+  as `fn(cli_app)`.
+- Use a real importable package path (`my_pkg...`), not `src.my_pkg...`, unless `src` is itself a package.
+
+Then run `uv run cli report weekly 2026-W41`.
+
+## Skills Manager — `cli skills`
+
+Upstream organizes `SKILL.md` files (skills.sh format) in tiers:
+
+| Tier | Purpose |
+|------|---------|
+| `skills/runtime/` | Used by agents during runs (`codeact`, `browser-automation`, `query-writing`, …) |
+| `skills/development/` | Recipes for extending the toolkit (`agent-profiles`, `add-tool`, `rag-systems`, …) |
+| `skills/governance/` | Standards and audits (`repo-map`, `evaluation-testing`, `pii-anonymization`) |
+| `skills/vendor/` | Imported third-party skills, not edited directly |
+| `skills/custom/`, `skills/community/` | Project-specific and community-installed skills |
 
 ```bash
-cli hello greet Alice
-cli hello greet Alice --shout
-cli hello farewell Bob
-cli hello --help
+uv run cli skills list --source custom
+uv run cli skills create invoice-review               # scaffold a skills.sh-format SKILL.md
+uv run cli skills add --skillssh langchain-ai/langchain-skills
+uv run cli skills add --git https://github.com/org/repo --path skills/foo
+uv run cli skills validate --all
 ```
 
-### `CliTopCommand` contract
+After `cli init`, a project's `skills/development/` folder contains upstream's own recipes (`agent-profiles`,
+`add-tool`, `add-cli-command`, `rag-systems`, `workflow-engine`, …). They are useful deep dives, but some lag the
+code (for example `development/configuration` still references `utils/config_mngr.py`), so check imports against
+the installed package.
 
-| Method | Required | Notes |
-|--------|----------|-------|
-| `get_description()` | Yes | Returns `(group_name, help_text)`. `group_name` is the CLI word users type. |
-| `register_sub_commands(app)` | Yes | Define all `@app.command()` functions here. |
-| `register(app)` | No (inherited) | Called automatically — creates the sub-Typer. **Do not override.** |
+## House Conventions for Code in genai-tk Projects
 
-The class is a Pydantic `BaseModel` — add configurable fields with defaults and access them via `self` inside sub-commands.
+From upstream `AGENTS.md`:
 
-### Legacy function-based pattern
+- Python 3.12+ typing (`str | None`, `list[str]`); avoid `Any` (use discriminated unions, `TypeAlias`)
+- Absolute imports; ruff, line length 120; `PascalCase` classes, `snake_case` functions, `_private`
+- Pydantic v2 for structured data: `model_config = {...}`, `model_post_init()`, `model_dump_json()`
+- `loguru` for logging; Google-style docstrings, no types, no `Raises:`, no field docstrings
+- Config via typed models: `global_config().section(key, Model)` / `.section_dict(key, Model)`
+- Tests: pytest style, `fake_llm_id` / `fake_llm` / `fake_embeddings` fixtures, fake providers over mocks,
+  markers `unit`, `integration`, `fake_models`, `real_models`; never call `get_pytest_config()` at module level and
+  never name fixtures `pytest_*`
+- Keep system prompts in YAML (`system_prompt:`), domain knowledge in `SKILL.md`
+- Upstream rule for its own repo: update matching skills, docs, and `CHANGELOG.md` in the same commit
 
-Older modules use a plain function instead of a class:
+## Repo Recipes (upstream `justfile`)
 
-```python
-def register_commands(cli_app: typer.Typer) -> None:
-    @cli_app.command()
-    def echo(text: str) -> None:
-        print(text)
-```
-
-```yaml
-cli:
-  commands:
-    - genai_tk.main.cli.register_commands   # function reference, not a class
-```
-
-Still supported but **not recommended for new commands** — use `CliTopCommand` for testability and structure.
-
----
-
-## How command discovery works
-
-On `cli` startup, `load_and_register_commands()` (in `genai_tk/main/cli.py`):
-
-1. Reads `cli.commands` from the merged YAML config
-2. For each entry (`module.ClassName`), dynamically imports the symbol
-3. If it's a `CliTopCommand` subclass → instantiates it, calls `.register(cli_app)`
-4. If it's a callable → calls `fn(cli_app)` (legacy path)
-5. With no arguments, displays a Rich command tree and exits
-
-The command tree at any time: just run `cli`.
-
----
-
-## Common patterns
-
-### Adding a command for a project workflow
-
-A command that runs a custom RAG pipeline:
-
-```python
-class IndexCommands(CliTopCommand):
-    def get_description(self) -> tuple[str, str]:
-        return "index", "Manage project document indexes."
-
-    def register_sub_commands(self, cli_app: typer.Typer) -> None:
-        @cli_app.command()
-        def rebuild(
-            retriever: str = typer.Argument(..., help="Retriever tag"),
-            source: Path = typer.Option(Path("./docs"), help="Source dir"),
-        ) -> None:
-            from genai_tk.core.retriever_factory import RetrieverFactory
-            from langchain_text_splitters import MarkdownTextSplitter
-
-            r = RetrieverFactory.create(retriever)
-            asyncio.run(r.adelete_store())
-            # ... ingest logic ...
-            print(f"✓ Rebuilt {retriever}")
-```
-
-### Adding a class field for shared config
-
-```python
-class MyCommands(CliTopCommand):
-    description: str = "Project commands."
-    default_dataset: str = "v2"               # Pydantic field with default
-
-    def register_sub_commands(self, cli_app: typer.Typer) -> None:
-        @cli_app.command()
-        def run(dataset: str = None) -> None:
-            ds = dataset or self.default_dataset
-            print(f"Using dataset {ds}")
-```
-
-If you want the field driven by config, override the YAML registration:
-
-```yaml
-cli:
-  commands:
-    - module: src.myapp.commands.MyCommands
-      default_dataset: v3
-```
-
-(Check `genai_tk/main/cli.py` `load_and_register_commands` for the exact instantiation hook — it accepts both bare class refs and dicts with init kwargs in some versions.)
-
-### Pre-checking environment
-
-Use `cli info config` early to surface missing API keys before invoking expensive commands:
+For contributors working in a clone of genai-tk:
 
 ```bash
-cli info config | grep "OPENAI_API_KEY"
+just install-dev        # uv sync with dev deps
+just check              # fmt + lint + test
+just test-unit
+just new ../my-app      # uv init --bare + uv add + cli init + uv sync + smoke test
+just lint-skills
 ```
 
-`info config` exits 0 even when keys are missing — it's informational. Use it as a sanity step in CI, not as a gate.
+Downstream projects can `import` the shared `tk.just` recipes (set `pkg_name` first). Docker images are built via
+`deploy/docker.just` (`just docker-build`, `EXTRAS=...`).

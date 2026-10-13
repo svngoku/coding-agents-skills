@@ -64,7 +64,9 @@ coding-agents-skills/
 │   │       ├── baml-structured.md
 │   │       ├── cli-and-init.md
 │   │       ├── configuration.md
-│   │       └── rag.md
+│   │       ├── models.md
+│   │       ├── rag.md
+│   │       └── workflows.md
 │   │
 │   ├── langchain/                      # LangChain framework
 │   │   ├── SKILL.md
@@ -241,25 +243,26 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 ### 5. genai-tk — GenAI & Agentic Toolkit
 **Status:** ✅ Complete
 
-**Description:** YAML-driven wrapper over LangChain, LangGraph, and 100+ LLM providers. Inversion-of-control layer where profiles in YAML drive factories that produce LangChain runtime objects.
+**Description:** YAML-driven wrapper over LangChain, LangGraph, and 100+ LLM providers. Inversion-of-control layer where profiles in YAML drive factories that produce LangChain runtime objects. Synced with upstream [tclatos/genai-tk](https://github.com/tclatos/genai-tk) at commit `7fbd7a3`, including a table of places where the upstream docs and code disagree.
 
 **Capabilities:**
-- `model_id@provider` LLM and embeddings factories
-- Four bundled agent frameworks (ReAct, Deep, Deer-flow, SmolAgents)
-- Unified `LangchainAgent` entry point with profile-based configuration
+- `model_id@provider` LLM and embeddings factories, reasoning effort, gateway routing, decision models
+- `config/app_conf.yaml` with `:merge` / `:profiles` overlays and `GENAITK_PROFILE` switching
+- Unified `agents:` profiles for two harnesses: LangChain (`react`, `deep`, `custom`) and DeerFlow
+- `LangchainAgent` and the harness-agnostic `create_harness` event stream
+- CodeAct agents, middlewares, deepagents skills, OpenSandbox Docker sandbox, MCP client and server
 - `RetrieverFactory` with six retriever types (vector, BM25, ensemble, reranked, pg_hybrid, zero_entropy)
+- YAML workflows on Prefect, ingest routing, and markdownize document conversion
 - BAML structured extraction
-- OpenSandbox Docker integration for secure code execution
-- MCP server registry and SkillsMiddleware for on-demand domain knowledge
-- CLI scaffolding with `cli init`
+- CLI scaffolding with `cli init` and a generated justfile
 
 **Use Cases:**
 - Building production-grade agent systems with YAML configuration
-- Multi-step planning with Deep agents and sandboxed execution
-- Deep web research with Deer-flow
-- Code-first automation with SmolAgents
+- Multi-step planning with deep agents and sandboxed execution
+- Deep web research with DeerFlow
+- Document ingestion, RAG, and structured extraction pipelines
 
-**Reference Files:** 5 guides
+**Reference Files:** 7 guides
 
 ---
 
