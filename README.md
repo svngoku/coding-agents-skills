@@ -110,7 +110,8 @@ coding-agents-skills/
 │   │       ├── deployment.md
 │   │       ├── manifest-review-apps.md
 │   │       ├── scaling-autoscaler.md
-│   │       └── terraform-iac.md
+│   │       ├── terraform-iac.md
+│   │       └── tutorials.md
 │   │
 │   ├── security-best-practices/        # Application security hardening
 │   │   ├── SKILL.md
@@ -380,6 +381,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 - Terraform Infrastructure-as-Code provider
 - Sovereign region (`osc-secnum-fr1`) on SecNumCloud-qualified Outscale infrastructure for French public-sector workloads
 - Migration guidance from Heroku
+- Deployment recipes from the official Tutorials Hub (Keycloak, PostgREST, WordPress, n8n, Metabase, ModSecurity, AI demos)
 
 **Use Cases:**
 - Deploying web apps to a European sovereign PaaS
@@ -387,7 +389,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 - Automating infrastructure with Terraform
 - Meeting French public-sector compliance requirements (HDS, SecNumCloud infrastructure)
 
-**Reference Files:** 7 guides
+**Reference Files:** 8 guides
 
 ---
 

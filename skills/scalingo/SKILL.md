@@ -21,6 +21,7 @@ The main file stays practical. Pull in a reference when:
 - **`references/manifest-review-apps.md`** — writing a `scalingo.json`, configuring review apps, or building a one-click deploy button
 - **`references/terraform-iac.md`** — managing Scalingo resources via the official Terraform provider
 - **`references/buildpacks.md`** — understanding stacks, picking or chaining buildpacks, writing a custom buildpack
+- **`references/tutorials.md`** — deploying a well-known tool (Keycloak, PostgREST, WordPress, n8n, Metabase, ModSecurity WAF, Judoscale, Lovable, Whisper, pgvector, OpenSearch RAG, Elastic Stack) following the official Tutorials Hub
 
 ## Mental model
 
@@ -142,6 +143,7 @@ scalingo --app my-app logs --lines 500       # historical
 scalingo --app my-app run bash               # interactive shell
 scalingo --app my-app run --size XL rake db:migrate
 scalingo --app my-app run --detached long-job.sh
+scalingo --app my-app cron-tasks             # scheduled jobs declared in cron.json (Scalingo Scheduler)
 
 # Domains + TLS (Let's Encrypt is automatic; certificates last 45 days and renew automatically)
 scalingo --app my-app domains-add example.com
@@ -269,7 +271,7 @@ data "scalingo_stack" "s26" {
 
 resource "scalingo_app" "api" {
   name     = "my-api"
-  stack_id = data.scalingo_stack.s26.id   # stack ID, not the slug
+  stack_id = data.scalingo_stack.s26.id   # Scalingo's own tutorials also pass the slug directly
   environment = {
     NODE_ENV = "production"
   }

@@ -46,7 +46,7 @@ data "scalingo_stack" "s26" {
 
 resource "scalingo_app" "api" {
   name        = "my-api"
-  stack_id    = data.scalingo_stack.s26.id   # optional; a stack ID (not the slug), and not `stack`
+  stack_id    = data.scalingo_stack.s26.id   # optional; the attribute is stack_id, not stack
   project_id  = scalingo_project.main.id   # optional
   force_https = true
   environment = {
@@ -56,7 +56,7 @@ resource "scalingo_app" "api" {
 }
 ```
 
-Other optional attributes: `router_logs`, `sticky_session`, `hds_resource`. `all_environment` is a read-only map that also includes addon-injected variables.
+The provider's example resolves the stack through the `scalingo_stack` data source; Scalingo's own tutorials pass the slug directly (`stack_id = "scalingo-26"`). Other optional attributes: `router_logs`, `sticky_session`, `hds_resource`. `all_environment` is a read-only map that also includes addon-injected variables.
 
 Outputs useful later: `scalingo_app.api.name`, `scalingo_app.api.id`, `scalingo_app.api.url` (the default subdomain URL), `scalingo_app.api.git_url`.
 
