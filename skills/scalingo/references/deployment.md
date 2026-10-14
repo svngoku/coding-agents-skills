@@ -1,14 +1,14 @@
 # Deployment on Scalingo
 
-Four deployment methods. Pick based on where your code lives and how much automation you want.
+Four deployment methods (there is no deploy-from-Docker-image option). Pick based on where your code lives and how much automation you want.
 
 | Method | When to use | Trigger |
 |---|---|---|
 | [Git push](#git-push) | Local development, full control | `git push scalingo main` |
 | [GitHub integration](#github--github-enterprise) | Team workflow, review apps per PR | Push to linked branch |
 | [GitLab integration](#gitlab) | Same as GitHub, GitLab-hosted repos | Push to linked branch |
-| [Archive](#archive-deploy) | CI-built artifacts, no git history exposed | API call with tarball URL |
-| [JAR / WAR](#jar--war) | JVM apps with prebuilt artifacts | CLI upload |
+| [Archive](#archive-deploy) | CI-built artifacts, no git history exposed | `scalingo deploy` with a tarball path or URL |
+| [WAR](#war) | JVM apps with a prebuilt WAR | `scalingo deploy --war` |
 
 ## The deployment pipeline
 
@@ -16,11 +16,14 @@ Every method lands in the same pipeline:
 
 1. **Ingest** — source code or pre-built artifact arrives at Scalingo
 2. **Build** — a buildpack detects the stack, installs dependencies, produces a slug (compiled artifact)
-3. **Release** — if a `release` process type exists in the `Procfile`, it runs here (e.g. migrations)
+3. **Postdeploy** — if the `Procfile` has a `postdeploy` line, it runs once in a separate one-off container (size M, 20-minute limit) before traffic is switched (e.g. migrations)
 4. **Swap** — new containers start; routers wait for them to be healthy; old containers stop only once new ones serve traffic (zero-downtime)
-5. **Postdeploy** — optional `postdeploy` process type from `Procfile` runs once after the new version is serving
 
-The build is cached between deploys — `scalingo deployment-cache-delete` forces a full rebuild.
+There is no `release` process type on Scalingo — a Heroku `release:` line must become `postdeploy:`.
+
+Limits: the build runs in a container with 6 CPUs and 8 GB of RAM, must finish within 30 minutes, and the resulting image can't exceed 2 GiB.
+
+The build is cached between deploys — `scalingo deployment-delete-cache` forces a full rebuild.
 
 ## Git push
 
@@ -57,7 +60,7 @@ To re-clone a Scalingo-hosted repo (e.g. after losing a local copy):
 git clone --origin scalingo git@ssh.osc-fr1.scalingo.com:my-app.git
 ```
 
-Only git-pushed code is in that repo — deploys made via GitHub integration, archive, or JAR/WAR don't populate it.
+Only git-pushed code is in that repo — deploys made via GitHub integration, archive, or WAR don't populate it.
 
 ## GitHub / GitHub Enterprise
 
@@ -124,11 +127,11 @@ Self-hosted GitLab instances work by passing the full URL to your instance.
 
 ## Archive deploy
 
-Deploy a `.tar.gz` of your source code fetched from a URL. Useful for CI pipelines that build artifacts independently.
+Deploy a `.tar.gz` of your source code, from a local file or a URL. Useful for CI pipelines that build artifacts independently.
 
-Archive shape — code must live inside a subdirectory (commonly `master/`) at the archive root:
+Archive shape — code must live inside a single top-level folder (any name; `master/` is just the usual example):
 
-```
+```text
 my-app.tar.gz
 └── master/
     ├── package.json
@@ -142,12 +145,15 @@ One-liner to create such an archive from a git repo:
 git archive --prefix=master/ main | gzip > my-app.tar.gz
 ```
 
-Deploy from a URL:
+Deploy from a local file or a URL:
 
 ```bash
+scalingo --app my-app deploy my-app.tar.gz
 scalingo --app my-app deploy https://example.com/my-app.tar.gz
-# Optional second arg: a git ref for the deployment record
+# Optional second arg: a version reference (tag, commit SHA) for the deployment record
 scalingo --app my-app deploy https://example.com/my-app.tar.gz v1.2.3
+# Return immediately instead of following the build
+scalingo --app my-app deploy --no-follow my-app.tar.gz v1.2.3
 ```
 
 The URL must be reachable from Scalingo's build infrastructure (public, or behind auth encoded in the URL).
@@ -163,18 +169,17 @@ scalingo --app my-app deploy \
 
 Useful for the one-click deploy button flow.
 
-## JAR / WAR
+## WAR
 
-For JVM apps with prebuilt artifacts. Skip the build step entirely.
+For JVM apps with a prebuilt WAR, the `deploy` command takes a `--war` flag:
 
 ```bash
-scalingo --app my-app deploy-jar ./target/app.jar
-scalingo --app my-app deploy-war ./target/app.war
+scalingo --app my-app deploy --war ./target/app.war
 ```
 
-The platform wraps the artifact in a minimal runtime (Java 8/11/17/21 depending on env configuration — see `JAVA_VERSION` env var). Your `Procfile` still decides how `web` starts, typically:
+There is no `deploy-jar` or `deploy-war` command, and no JAR upload: for JAR-based apps, deploy the source and let the Java buildpack build it. The `Procfile` still decides how `web` starts, typically:
 
-```
+```text
 web: java -jar target/app.jar
 ```
 
@@ -182,20 +187,20 @@ web: java -jar target/app.jar
 
 - Auto-deploy triggers on **every** push to the linked branch, not just the default branch
 - A failed build does not roll back — containers keep running the previous version
-- A failed `release` process type (migration) aborts the deploy — containers are not replaced
+- A failed `postdeploy` command (e.g. a migration) fails the deploy — the old containers keep serving
 - Review apps created from PRs get `parent-app-name-pr<N>` naming by default
 
 ## One-click deploy buttons
 
 A URL that deploys a `scalingo.json`-equipped public repo when clicked:
 
-```
+```text
 https://dashboard.scalingo.com/create/app?source=https://github.com/org/repo
 ```
 
 With a custom branch:
 
-```
+```text
 https://dashboard.scalingo.com/create/app?source=https://github.com/org/repo#develop
 ```
 
@@ -212,7 +217,7 @@ The `scalingo.json` manifest controls which addons and env vars the new app gets
 Caches go per-app. Buildpacks decide what to cache (npm deps, wheel files, compiled binaries). When a deploy fails inexplicably after working previously, and a dependency is suspect, clear it:
 
 ```bash
-scalingo --app my-app deployment-cache-delete
+scalingo --app my-app deployment-delete-cache
 ```
 
 Next deploy will rebuild from scratch.
@@ -225,5 +230,5 @@ Next deploy will rebuild from scratch.
 | `Push rejected, missing Procfile` | No `Procfile` and no default process type from buildpack | Add a `Procfile` |
 | `Detected buildpack: …` wrong | Framework-file present but minor | Set `BUILDPACK_URL` env to force a specific buildpack |
 | Build succeeds, app crashes at boot | Missing env var or port binding | Check `logs`, verify app binds to `$PORT` |
-| Build runs old code | Stale cache | `deployment-cache-delete`, redeploy |
+| Build runs old code | Stale cache | `deployment-delete-cache`, redeploy |
 | Review apps inherit prod credentials | No `scalingo.json` env overrides | Add `env` block to `scalingo.json` |

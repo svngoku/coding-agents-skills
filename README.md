@@ -378,14 +378,14 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 - Horizontal and vertical container scaling with autoscaler support
 - `scalingo.json` manifest and review app configuration
 - Terraform Infrastructure-as-Code provider
-- SecNumCloud-qualified region (`osc-secnum-fr1`) for French public-sector workloads
+- Sovereign region (`osc-secnum-fr1`) on SecNumCloud-qualified Outscale infrastructure for French public-sector workloads
 - Migration guidance from Heroku
 
 **Use Cases:**
 - Deploying web apps to a European sovereign PaaS
 - Managing production databases and background workers
 - Automating infrastructure with Terraform
-- Meeting French public-sector compliance requirements (HDS, SecNumCloud)
+- Meeting French public-sector compliance requirements (HDS, SecNumCloud infrastructure)
 
 **Reference Files:** 7 guides
 

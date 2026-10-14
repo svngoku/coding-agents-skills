@@ -36,8 +36,11 @@ Container tiers:
 | L    | 1 GB    | standard     | 512       |
 | XL   | 2 GB    | high         | 1024      |
 | 2XL  | 4 GB    | high         | 2048      |
+| 3XL  | 8 GB    | high         | —         |
 
-XL and 2XL receive roughly double the CPU priority of M/L in contested situations. Sizes beyond 2XL exist (4XL, 8XL, etc.) — contact Scalingo to enable them.
+XL and larger receive roughly double the CPU priority of M/L in contested situations. 3XL is the largest size and has been self-service since 2026-07-21; there is no 4XL or 8XL. A process type can run up to 10 containers by default (ask support for more).
+
+**Swap is going away.** It was removed for new customers from 2026-06-01 and new apps from 2026-09-01, and it will be removed from all containers on 2027-01-01. An app that relies on swap today may be OOM-killed once it is gone, so pick a size whose RAM covers the real peak.
 
 Vertical scaling suits:
 
@@ -52,7 +55,7 @@ The two are complementary — most production apps combine both (e.g. 3 × L web
 - Scaling up/down/out/in is **zero-downtime** — new containers start and pass health checks before old ones are stopped
 - Starting a process type from 0 triggers a cold start (image pull, app boot)
 - Stopping is fast — running containers are sent SIGTERM, have a grace period, then SIGKILL
-- Manual scale operations **disable the autoscaler** for that process type if it was active
+- If an autoscaler is active on a process type, disable it (`autoscalers-disable <type>`) before scaling that type by hand, so the two don't conflict
 
 ## The Scalingo Autoscaler
 
@@ -64,31 +67,36 @@ App → Resources → select process type → Autoscale → pick metric, target,
 
 ### Enable via CLI
 
+Autoscalers are identified by container type, not by an ID. All five flags are required on `autoscalers-add`.
+
 ```bash
 scalingo --app my-app autoscalers-add --container-type web \
-  --metric cpu --target 70 --min 1 --max 10
+  --metric cpu --target 0.75 --min-containers 2 --max-containers 10
 
 scalingo --app my-app autoscalers                  # list
-scalingo --app my-app autoscalers-update <autoscaler-id> --target 60
-scalingo --app my-app autoscalers-remove <autoscaler-id>
-scalingo --app my-app autoscalers-enable <autoscaler-id>
-scalingo --app my-app autoscalers-disable <autoscaler-id>
+scalingo --app my-app autoscalers-update --container-type web --target 0.6
+scalingo --app my-app autoscalers-update -c web --disabled   # or autoscalers-disable web
+scalingo --app my-app autoscalers-disable web
+scalingo --app my-app autoscalers-enable web
+scalingo --app my-app autoscalers-remove web
 ```
+
+Short flags: `-c` (container type), `-m` (metric), `-t` (target). `cpu` targets are ratios (`0.75` = 75%), not percentages; check the dashboard's suggested value for the other metrics. The minimum is 2 containers, so a single-container app can't be autoscaled.
 
 ### Available metrics
 
 | Metric | What it measures | Best for | Aggregation |
 |---|---|---|---|
 | `cpu` | CPU % per container | General-purpose web apps | Mean across containers |
-| `ram` | RAM % per container | Memory-bound apps | Mean across containers |
+| `memory` | RAM usage per container | Memory-bound apps | Mean across containers |
 | `swap` | Swap usage % | Leak detection / oversized workload | Mean |
 | `rpm_per_container` | Requests per minute / container | Traffic-driven scaling | Sum / n |
-| `response_time` | p95 response time | User-experience-driven scaling | p95 across requests |
-| `5xx` | Server errors per minute | Reliability-driven scaling | Sum per minute |
+| `p95_response_time` | p95 response time | User-experience-driven scaling | p95 across requests |
+| `5XX` | Server errors per minute | Reliability-driven scaling | Sum per minute |
 
 Recommended targets for router-based metrics (RPM, response time, 5xx) are computed from your app's own last-24h median — Scalingo surfaces these in the dashboard as starting points.
 
-**Finding the right target**: scale down to 1 container, run a load test (Locust, k6, Artillery), and find the saturation point. Set the target 20–30% below saturation so the autoscaler has time to add capacity.
+**Finding the right target**: scale down to 1 container (with the autoscaler disabled), run a load test (Locust, k6, Artillery), and find the saturation point. Set the target 20–30% below saturation so the autoscaler has time to add capacity.
 
 ### Scaling rules
 
@@ -109,11 +117,11 @@ A rising p95 response time doesn't always mean the containers are saturated. It 
 - External API latency
 - GC pressure inside the runtime
 
-Don't set `response_time`-based autoscaling without first confirming it's container saturation, not a downstream bottleneck. The autoscaler can't fix a slow database by adding web containers.
+Don't set `p95_response_time`-based autoscaling without first confirming it's container saturation, not a downstream bottleneck. The autoscaler can't fix a slow database by adding web containers.
 
 ### 5xx caveat
 
-`5xx` triggers scaling on server error rate per minute. This only helps if errors are caused by overload (502/504 from request-queue overflow). Errors from bugs or bad config will cause the autoscaler to add capacity without fixing anything.
+`5XX` triggers scaling on server error rate per minute. This only helps if errors are caused by overload (502/504 from request-queue overflow). Errors from bugs or bad config will cause the autoscaler to add capacity without fixing anything.
 
 ## Request queueing and router behavior
 

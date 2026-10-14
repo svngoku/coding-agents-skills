@@ -4,19 +4,29 @@ Scalingo uses **buildpacks** — the same open-source ecosystem Heroku pioneered
 
 ## The stack
 
-The stack is the Ubuntu-based base image your buildpack runs against. Current stack: `scalingo-22` (Ubuntu 22.04). Pinned at app-creation time; upgrade via:
+The stack is the Ubuntu-based base image your buildpack runs against. The stack is pinned at app-creation time.
+
+| Stack | Base | Status |
+|---|---|---|
+| `scalingo-26` | Ubuntu 26.04 | Default since 2026-06-22, supported until May 2031 |
+| `scalingo-24` | Ubuntu 24.04 | Supported until May 2029 |
+| `scalingo-22` | Ubuntu 22.04 | Deprecated; discontinued on 2027-06-01 — migrate now |
+| `scalingo-20` | Ubuntu 20.04 | Discontinued in April 2025 |
+
+List stacks and change one with:
 
 ```bash
-scalingo --app my-app stacks-set scalingo-22
+scalingo stacks
+scalingo --app my-app stacks-set scalingo-26   # takes effect on the next deploy
 ```
 
-The stack image is public on Docker Hub as `scalingo/scalingo-22` — useful for local testing of buildpacks or reproducing build environments:
+Stack images are public on Docker Hub as `scalingo/scalingo-26`, `scalingo/scalingo-24`, and `scalingo/scalingo-22` (plus `-minimal` variants) — useful for local testing of buildpacks or reproducing build environments:
 
 ```bash
 docker run --rm -it \
-  -e STACK=scalingo-22 \
+  -e STACK=scalingo-26 \
   -v "$(pwd):/build" \
-  scalingo/scalingo-22:latest bash
+  scalingo/scalingo-26:latest bash
 ```
 
 ## Officially supported buildpacks (auto-detected)
@@ -56,7 +66,7 @@ Set the `BUILDPACK_URL` env var before deploying:
 
 ```bash
 scalingo --app my-app env-set BUILDPACK_URL=https://github.com/Scalingo/rust-buildpack
-scalingo --app my-app deployment-cache-delete
+scalingo --app my-app deployment-delete-cache
 git push scalingo main
 ```
 
@@ -76,7 +86,7 @@ scalingo --app my-app env-set BUILDPACK_URL=https://github.com/Scalingo/multi-bu
 
 Then create a `.buildpacks` file at repo root:
 
-```
+```text
 https://github.com/Scalingo/nodejs-buildpack
 https://github.com/Scalingo/python-buildpack
 ```
@@ -87,7 +97,7 @@ Buildpacks run top-to-bottom. The **last** buildpack determines the process type
 
 A buildpack is a git repo with three scripts:
 
-```
+```text
 bin/
 ├── detect      # Exit 0 if this buildpack applies
 ├── compile     # Install dependencies, compile the app
@@ -157,14 +167,14 @@ Scripts dropped in `.profile.d/` by buildpacks are sourced at container startup 
 
 ```bash
 # Get the stack image
-docker pull scalingo/scalingo-22
+docker pull scalingo/scalingo-26
 
 # Mount the buildpack and the app, run the three scripts manually
 docker run --rm -it \
-  -e STACK=scalingo-22 \
+  -e STACK=scalingo-26 \
   -v /path/to/my-buildpack:/buildpack \
   -v /path/to/my-app:/build \
-  scalingo/scalingo-22:latest bash
+  scalingo/scalingo-26:latest bash
 
 # Inside the container:
 /buildpack/bin/detect /build      # Should exit 0
@@ -186,14 +196,14 @@ scalingo --app my-app env-set BUILDPACK_URL=https://github.com/Scalingo/multi-bu
 
 `.buildpacks`:
 
-```
+```text
 https://github.com/Scalingo/apt-buildpack
 https://github.com/Scalingo/python-buildpack
 ```
 
 `Aptfile` at repo root:
 
-```
+```text
 imagemagick
 libpq-dev
 ffmpeg
@@ -207,11 +217,11 @@ The Node buildpack respects `engines.node` in `package.json`. Pin `"node": "20.1
 
 ### Python with C extensions
 
-`requirements.txt` with packages like `psycopg2-binary`, `Pillow`, `lxml` usually "just works" on `scalingo-22`. For packages needing build-time system headers, add an `Aptfile` with `-dev` packages and use the multi buildpack with apt first.
+`requirements.txt` with packages like `psycopg2-binary`, `Pillow`, `lxml` usually "just works" on `scalingo-26`. For packages needing build-time system headers, add an `Aptfile` with `-dev` packages and use the multi buildpack with apt first.
 
 ### Compile-once binaries
 
-For languages like Rust or Go where the build output is a single binary, consider the archive deploy method: build in CI, upload the binary and a minimal Procfile as a tarball, skip the buildpack step entirely.
+For languages like Rust or Go where the build output is a single binary, consider the archive deploy method: build in CI (against the same stack image), then deploy a tarball with the binary and a minimal Procfile. Archive deploys still run a buildpack build, so this only skips compilation if the buildpack you use accepts a prebuilt binary.
 
 ## Private buildpacks
 
@@ -223,8 +233,9 @@ For languages like Rust or Go where the build output is a single binary, conside
 2. Verify the detected buildpack matches your expectation (first line of build output: `-----> Detected buildpack: X`)
 3. If a dependency install fails, check if the version is too new/old for the stack — pin explicitly
 4. If a native build fails, check whether the needed system package is present (use `apt` buildpack if not)
-5. If everything looks right but fails: clear the cache (`scalingo deployment-cache-delete`) and retry
-6. Reproduce locally in the `scalingo/scalingo-22` Docker image
+5. If everything looks right but fails: clear the cache (`scalingo deployment-delete-cache`) and retry
+6. Reproduce locally in the Docker image of your app's stack (e.g. `scalingo/scalingo-26`)
+7. If the build is killed, check the limits: 30 minutes, 6 CPUs / 8 GB build container, 2 GiB image
 
 Common specific errors:
 

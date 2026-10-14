@@ -2,7 +2,7 @@
 
 `scalingo.json` is the app manifest — a declarative file describing how an app should be configured when created from a one-click deploy button or as a review app. It's the Scalingo equivalent of Heroku's `app.json`, and the shapes are near-identical for common fields.
 
-**Important scope**: the manifest is applied **only** when creating an app via one-click deploy or review apps. It is **not** re-read on ordinary `git push` deploys. Production addons, env vars, and formation are managed via the CLI/dashboard/Terraform after the initial creation.
+**Important scope**: the manifest is evaluated **only** when an app is created via one-click deploy or as a review app. It is **not** re-read on later deploys of that app, nor on ordinary `git push` deploys. Production addons, env vars, and formation are managed via the CLI/dashboard/Terraform after the initial creation.
 
 ## File location
 
@@ -19,7 +19,7 @@ If your code lives in a subdirectory (configured via the `PROJECT_DIR` env var),
   "logo": "https://example.com/logo.svg",
   "repository": "https://github.com/org/repo",
   "website": "https://example.com",
-  "stack": "scalingo-22",
+  "stack": "scalingo-26",
   "env": {
     "ENVIRONMENT": {
       "description": "Runtime environment identifier",
@@ -46,10 +46,10 @@ If your code lives in a subdirectory (configured via the `PROJECT_DIR` env var),
   "addons": [
     {
       "plan": "postgresql:postgresql-starter-512",
-      "options": { "version": "15" }
+      "options": { "version": "17" }
     },
     {
-      "plan": "redis:redis-starter-128"
+      "plan": "redis:redis-starter-256"
     }
   ],
   "scripts": {
@@ -69,7 +69,8 @@ If your code lives in a subdirectory (configured via the `PROJECT_DIR` env var),
 | `logo` | URL | Rendered on the deploy page |
 | `repository` | URL | Source repo (used if URL param isn't provided) |
 | `website` | URL | Project homepage |
-| `stack` | string | Default stack — usually omit to let the platform pick |
+| `stack` | string | Stack for the new app (`scalingo-26` is the default; `scalingo-22` is deprecated) — usually omit to let the platform pick |
+| `firewall_rules` | array | Application Firewall rules to create with the app (see the official manifest docs for the exact shape) |
 
 ### `env`
 
@@ -89,16 +90,17 @@ A map of process type → `{ amount, size }`. Applied at creation time. Ordinary
 
 ### `addons`
 
-Array of objects. Each addon is specified as `"<provider>:<plan>"`. Optional `options.version` pins a version.
+Array of objects. Each addon is specified as `"<provider>:<plan>"`. Optional `options.version` pins an engine version (e.g. PostgreSQL `"17"`). Sandbox plans no longer exist; use the smallest Starter plan.
 
 Common plan identifiers:
 
 - `postgresql:postgresql-starter-512`, `postgresql:postgresql-business-1024`
 - `mysql:mysql-starter-512`
-- `mongodb:mongo-starter-512`
-- `redis:redis-starter-128`
+- `mongodb:mongo-starter-512` (smallest is 256 MB)
+- `redis:redis-starter-256` (smallest Caching plan)
+- `opensearch:opensearch-starter-1024` (smallest OpenSearch plan)
 
-Validate with `scalingo addons-providers` and `scalingo addons-plans <provider>`.
+Validate with `scalingo addons-list` and `scalingo addons-plans <provider>`.
 
 ### `scripts`
 
@@ -107,7 +109,7 @@ Validate with `scalingo addons-providers` and `scalingo addons-plans <provider>`
 
 For production apps, move `postdeploy` into the `Procfile`:
 
-```
+```text
 postdeploy: bundle exec rake db:migrate
 ```
 
@@ -142,7 +144,7 @@ A review app's default configuration:
 
 - **Created**: when the PR is opened (auto) or manually via CLI
 - **Redeployed**: on every push to the PR branch (auto-deploy)
-- **Destroyed**: when the PR is closed (`--destroy-on-close`) or after a period of inactivity (`--hours-before-delete-on-stale`)
+- **Destroyed**: when the PR is closed (`--destroy-on-close`) or after a period of inactivity (`--destroy-on-stale` with `--hours-before-destroy-on-stale`)
 
 ### Manually creating a review app
 
@@ -156,9 +158,9 @@ scalingo --app parent-app integration-link-manual-review-app <pr-number>
 scalingo --app parent-app integration-link-update \
   --deploy-review-apps \
   --destroy-on-close \
-  --hours-before-delete-on-close 2 \
-  --destroy-stale \
-  --hours-before-delete-stale 168 \
+  --hours-before-destroy-on-close 2 \
+  --destroy-on-stale \
+  --hours-before-destroy-on-stale 168 \
   --allow-review-apps-from-forks    # see security note below
 ```
 
@@ -205,13 +207,13 @@ if os.environ.get("IS_REVIEW_APP"):
 
 The manifest powers the one-click deploy flow. Button URL:
 
-```
+```text
 https://dashboard.scalingo.com/create/app?source=https://github.com/org/repo
 ```
 
 With a specific branch:
 
-```
+```text
 https://dashboard.scalingo.com/create/app?source=https://github.com/org/repo#develop
 ```
 
@@ -268,7 +270,7 @@ In `scalingo.json`:
 
 In the Procfile:
 
-```
+```text
 postdeploy: [ -z "$RUN_TEST_SEED" ] && bundle exec rake db:migrate || true
 ```
 

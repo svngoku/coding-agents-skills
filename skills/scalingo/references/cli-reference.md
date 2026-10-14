@@ -11,7 +11,7 @@ All commands that act on an app accept `--app <name>` or `-a <name>`. Commands t
 ## Table of contents
 
 1. [Global](#global)
-2. [Apps](#apps)
+2. [Apps](#apps) (incl. [Projects and private networks](#projects-and-private-networks))
 3. [Deployment and Git](#deployment-and-git)
 4. [Process types and scaling](#process-types-and-scaling)
 5. [One-off containers](#one-off-containers)
@@ -25,6 +25,7 @@ All commands that act on an app accept `--app <name>` or `-a <name>`. Commands t
 13. [Events and audit](#events-and-audit)
 14. [Stats and metrics](#stats-and-metrics)
 15. [Addon configuration](#addon-configuration)
+16. [Firewall, output format, and preview features](#firewall-output-format-and-preview-features)
 
 ## Global
 
@@ -52,10 +53,23 @@ Generate an API token in the dashboard: Account Settings → API Tokens.
 ```bash
 scalingo apps                        # List your apps in the current region
 scalingo create <name>               # Create an app (validates name uniqueness)
-scalingo create <name> --stack scalingo-22   # Pin a stack explicitly
-scalingo rename --current old --new new
+scalingo create <name> --project-id <project-id>   # Create inside a project
+scalingo --app <name> stacks-set scalingo-26       # Pin a stack (there is no `create --stack`)
+scalingo rename --app old --new-name new
 scalingo destroy --app <name>        # Delete (requires typing the app name)
-scalingo --app <name> info           # Metadata (region, stack, formation, last deploy)
+scalingo --app <name> apps-info      # Metadata (region, stack, status)
+```
+
+`create` only accepts `--remote`, `--buildpack`, `--project-id`, and `--hds-resource`. Set the stack afterwards with `stacks-set` (available stacks: `scalingo stacks`).
+
+## Projects and private networks
+
+Projects group apps; Private Networks are attached to a project and let its apps reach each other without going through the public internet.
+
+```bash
+scalingo projects                    # List projects (see `scalingo help` for the projects-* family)
+scalingo --app <name> project-set <project-id>     # Move an app into a project
+scalingo --app <name> private-networks-domain-names   # Private DNS names of the app's containers
 ```
 
 ## Deployment and Git
@@ -64,12 +78,14 @@ scalingo --app <name> info           # Metadata (region, stack, formation, last 
 scalingo --app <name> git-show       # Show the git remote URL for the app
 scalingo --app <name> git-setup      # Add the `scalingo` remote to local repo
 
-# Archive deploy (URL must be reachable from the platform)
+# Archive deploy: local tar.gz (or WAR) path, or a URL reachable from the platform.
+# The archive must contain the code inside a single top-level folder (any name).
+scalingo --app <name> deploy my-app.tar.gz
 scalingo --app <name> deploy <https://.../archive.tar.gz>
 scalingo --app <name> deploy <https://.../archive.tar.gz> <git-ref>
 
 # Reset build cache (forces buildpack to run fresh)
-scalingo --app <name> deployment-cache-delete
+scalingo --app <name> deployment-delete-cache
 
 # Deployments list and status
 scalingo --app <name> deployments
@@ -98,15 +114,29 @@ Container sizes (memory / CPU priority):
 | L    | 1 GB   | standard     |
 | XL   | 2 GB   | high         |
 | 2XL  | 4 GB   | high         |
+| 3XL  | 8 GB   | high         |
 
-Bigger tiers (e.g. 4XL and up) are available on request.
+3XL is the largest size and is self-service. A process type can run up to 10 containers by default.
+
+Autoscaler commands are keyed by container type, not by an ID:
+
+```bash
+scalingo --app <name> autoscalers
+scalingo --app <name> autoscalers-add -c web -m cpu -t 0.75 --min-containers 2 --max-containers 10
+scalingo --app <name> autoscalers-update -c web -t 0.6
+scalingo --app <name> autoscalers-disable web
+scalingo --app <name> autoscalers-enable web
+scalingo --app <name> autoscalers-remove web
+```
+
+See `scaling-autoscaler.md` for metric names and targets.
 
 ## One-off containers
 
-One-offs are ephemeral copies of your production environment. Up to **10 per app**, **50 per account**.
+One-offs are ephemeral copies of your production environment. The number of concurrent one-offs is limited per app and per account.
 
 ```bash
-# Attached (interactive, stopped after 30 min idle)
+# Attached (interactive, closed after 30 min with no data exchanged)
 scalingo --app <name> run bash
 scalingo --app <name> run --size XL python manage.py migrate
 scalingo --app <name> run --env DEBUG=1 --env FOO=bar bash
@@ -119,7 +149,7 @@ scalingo --app <name> ps
 scalingo --app <name> one-off-stop <one-off-id>
 ```
 
-Your workstation must allow outbound TCP/5000 for attached one-offs.
+Any one-off (attached or detached) is killed after 1 hour without producing output, so long jobs should log progress.
 
 ## Environment variables
 
@@ -132,7 +162,7 @@ scalingo --app <name> env-unset KEY KEY2
 
 Env changes do **not** restart the app — batch and then `scalingo restart`.
 
-Limits: 64 chars for name, 8192 chars for value.
+Limits: 64 chars for name, 32,768 chars for value.
 
 For multi-line secrets, either quote carefully on the CLI or Base64-encode:
 
@@ -145,7 +175,7 @@ scalingo --app <name> env-set "PRIVATE_KEY=$(cat key.pem | base64 -w 0)"
 
 ```bash
 # Discovery
-scalingo addons-providers                        # List all available providers
+scalingo addons-list                            # List all available addon providers
 scalingo addons-plans <provider-id>              # Plans for a given provider
 
 # Lifecycle
@@ -168,27 +198,33 @@ Built-in REPL one-offs. They figure out credentials from env and open the right 
 ```bash
 scalingo --app <name> pgsql-console
 scalingo --app <name> mysql-console
-scalingo --app <name> mongo-console
+scalingo --app <name> mongo-console      # uses mongosh since CLI 1.50.0
 scalingo --app <name> redis-console
+scalingo --app <name> influxdb-console
+scalingo --app <name> valkey-console
 ```
 
 Inside a one-off `bash`, install CLI tools for your addon with:
 
 ```bash
 dbclient-fetcher postgresql
-dbclient-fetcher mysql 8.0
+dbclient-fetcher mysql 8.4
 dbclient-fetcher mongo
 dbclient-fetcher redis
 ```
 
-Backup management:
+Backup management (database commands take the addon with `--addon <addon-id>`):
 
 ```bash
-scalingo --app <name> backups                      # List database backups
-scalingo --app <name> backups-download <backup-id>
-scalingo --app <name> backups-create <addon-id>    # Manual backup
-scalingo --app <name> backups-config <addon-id>    # Configure periodic backups
+scalingo --app <name> --addon <addon-id> backups              # List database backups
+scalingo --app <name> --addon <addon-id> backups-download --backup <backup-id>
+scalingo --app <name> --addon <addon-id> backups-create       # Manual backup
+scalingo --app <name> --addon <addon-id> backups-config --schedule-at 3   # Daily backup hour
+scalingo --app <name> --addon postgresql database-pitr-recovery-window   # Restorable time range
+scalingo --app <name> --addon postgresql database-pitr-restore 2026-07-18T23:00:00Z   # PITR (RFC 3339 time)
 ```
+
+ Plans can be listed with `scalingo database-list-plans`. For Dedicated Resources databases (not attached to an app), use `--database <database-id>` instead of `--app`/`--addon`.
 
 ## Domains and TLS
 
@@ -197,10 +233,11 @@ scalingo --app <name> domains                    # List
 scalingo --app <name> domains-add example.com    # Add; Let's Encrypt cert auto-issued
 scalingo --app <name> domains-remove example.com
 scalingo --app <name> domains-ssl --cert cert.pem --key key.pem example.com   # Bring your own cert
-scalingo --app <name> domains-set-canonical example.com   # Force redirects to this domain
+scalingo --app <name> set-canonical-domain example.com   # Force redirects to this domain
+scalingo --app <name> unset-canonical-domain
 ```
 
-Every app has a default subdomain: `<name>.osc-fr1.scalingo.io` (or the equivalent for other regions). HTTPS is enabled by default and HTTP redirects to HTTPS automatically — disable via `FORCE_HTTPS=false` if needed.
+Let's Encrypt certificates are valid 45 days and renewed automatically. Every app has a default subdomain: `<name>.osc-fr1.scalingo.io` (or the equivalent for other regions). HTTPS is enabled by default and HTTP redirects to HTTPS automatically — disable via `FORCE_HTTPS=false` if needed.
 
 ## Logs
 
@@ -217,13 +254,14 @@ Log drains (forward to external systems):
 
 ```bash
 scalingo --app <name> log-drains                 # List drains
-scalingo --app <name> log-drains-add --type=syslog --url=<url>
+scalingo --app <name> log-drains --with-addons   # Include addon drains
+scalingo --app <name> log-drains-add --type syslog --host <host> --port <port>
 scalingo --app <name> log-drains-add --type=elk --url=https://user:pass@host/path
 scalingo --app <name> log-drains-add --type=datadog --url=<datadog-url>
 scalingo --app <name> log-drains-remove <drain-url>
 
-# Addon logs drain (separate from app logs)
-scalingo --app <name> log-drains-add-addon --addon <addon-id> --type syslog --url <url>
+# Addon logs drain (database addons only; separate from app logs)
+scalingo --app <name> log-drains-add --addon <addon-id> --type syslog --host <host> --port <port>
 ```
 
 ## Collaborators and access
@@ -234,7 +272,7 @@ scalingo --app <name> collaborators-add email@example.com
 scalingo --app <name> collaborators-remove email@example.com
 ```
 
-Collaborators accept or decline by email. They can read/write to the app but can't destroy it unless granted ownership transfer.
+Collaborators accept or decline by email. They can read/write to the app but can't destroy it unless granted ownership transfer. A **Limited Collaborator** role also exists for restricted access (set it in the dashboard).
 
 ## SCM integrations and review apps
 
@@ -275,14 +313,31 @@ Router metrics (RPM, response times, 5xx) are visible in the dashboard and used 
 
 ## Addon configuration
 
-Scalingo managed databases expose configurable features:
+Scalingo managed databases expose configurable features and users:
 
 ```bash
-scalingo --app <name> database-enable-feature <addon-id> <feature>
-scalingo --app <name> database-disable-feature <addon-id> <feature>
-scalingo --app <name> database-users-list <addon-id>
-scalingo --app <name> database-users-create <addon-id> --user <username> --read-only
-scalingo --app <name> database-users-delete <addon-id> --user <username>
+scalingo --app <name> --addon <addon-id> database-enable-feature force-ssl
+scalingo --app <name> --addon <addon-id> database-disable-feature force-ssl
+scalingo --app <name> --addon postgresql database-users-list
+scalingo --app <name> --addon postgresql database-users-create --read-only <username>   # password prompted; blank = generated
+scalingo --app <name> --addon postgresql database-users-update-password <username>
+scalingo --app <name> --addon postgresql database-users-delete <username>
 ```
 
-Features vary by engine — examples for PostgreSQL: `pg_stat_statements`, `force_ssl`. Check `addons-info` for available toggles.
+`--addon` accepts the addon ID or the addon type (e.g. `postgresql`) when the app has a single addon of that type. Features vary by engine — `force-ssl` (optional on every plan) and `publicly-available` are the common ones. PostgreSQL extensions such as `pg_stat_statements` are enabled with SQL (`CREATE EXTENSION`), not as features.
+
+## Firewall, output format, and preview features
+
+```bash
+# Application Firewall (launched 2026-10): restrict inbound traffic to an app
+scalingo --app <name> app-firewall-rules
+scalingo --app <name> app-firewall-rule-add --cidr 203.0.113.42/32 --label office
+scalingo --app <name> app-firewall-rule-remove <rule-id>
+
+# Machine-readable output (global flag; not every command supports it yet)
+scalingo --format json --app <name> apps-info
+
+# Preview commands (Dedicated Resources databases, database firewall rules, net peerings, ...)
+export SCALINGO_PREVIEW_FEATURES=true
+scalingo help
+```
