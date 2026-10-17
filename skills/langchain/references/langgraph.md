@@ -1,105 +1,188 @@
 # LangGraph Reference
 
-LangGraph provides fine-grained control for complex agent workflows.
+LangGraph is the runtime under `create_agent`. Use it directly when you need custom control flow:
+deterministic steps, parallel branches, loops, multi-agent graphs or long-running durable jobs.
+Verified against `langgraph` 1.2.
 
 ## Installation
 
 ```bash
-pip install langgraph
+pip install -U langgraph
+pip install -U langgraph-checkpoint-sqlite     # SqliteSaver
+pip install -U langgraph-checkpoint-postgres   # PostgresSaver / PostgresStore
 ```
 
 ## Graph API
 
-Define nodes and edges for custom workflows:
-
 ```python
-from langgraph.graph import StateGraph, START, END
-from typing import TypedDict, Annotated
 from operator import add
+from typing import Annotated, Literal
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
 
 class State(TypedDict):
-    messages: Annotated[list, add]
+    items: Annotated[list[str], add]   # reducer: node outputs are appended, not overwritten
     step_count: int
 
-def process_input(state: State) -> dict:
-    return {"step_count": state["step_count"] + 1}
+def process(state: State) -> dict:
+    return {"items": [f"step {state['step_count']}"], "step_count": state["step_count"] + 1}
 
-def should_continue(state: State) -> str:
-    return "continue" if state["step_count"] < 3 else "end"
+def should_continue(state: State) -> Literal["process", "__end__"]:
+    return "process" if state["step_count"] < 3 else END
 
-graph = StateGraph(State)
-graph.add_node("process", process_input)
-graph.add_edge(START, "process")
-graph.add_conditional_edges("process", should_continue, {
-    "continue": "process",
-    "end": END
-})
+builder = StateGraph(State)
+builder.add_node("process", process)
+builder.add_edge(START, "process")
+builder.add_conditional_edges("process", should_continue)
+graph = builder.compile()
 
-app = graph.compile()
-result = app.invoke({"messages": [], "step_count": 0})
+graph.invoke({"items": [], "step_count": 0})
 ```
+
+For chat-style graphs use `MessagesState` (a `messages` key with the `add_messages` reducer).
+
+### Command: Update State and Route from a Node
+
+```python
+from langgraph.types import Command
+
+def triage(state: State) -> Command[Literal["urgent", "normal"]]:
+    target = "urgent" if "outage" in state["items"][-1] else "normal"
+    return Command(update={"step_count": 0}, goto=target)
+```
+
+### Send: Dynamic Fan-Out (Map-Reduce)
+
+```python
+from langgraph.types import Send
+
+def fan_out(state: dict) -> list[Send]:
+    return [Send("summarize", {"doc": d}) for d in state["docs"]]
+
+# builder.add_conditional_edges("load", fan_out, ["summarize"])
+# Results from parallel branches need a reducer key (e.g. Annotated[list, add]) to be merged.
+```
+
+## Node Policies: Retries, Caching, Timeouts
+
+```python
+from langgraph.cache.memory import InMemoryCache
+from langgraph.types import CachePolicy, RetryPolicy, TimeoutPolicy
+
+builder.add_node(
+    "fetch",
+    fetch_node,
+    retry_policy=RetryPolicy(max_attempts=3, initial_interval=1.0, retry_on=ConnectionError),
+    cache_policy=CachePolicy(ttl=300),   # cache by node input for 5 minutes
+    timeout=TimeoutPolicy(run_timeout=60, idle_timeout=15),   # async nodes only
+)
+
+# Or set defaults for every node in the graph
+builder.set_node_defaults(retry_policy=RetryPolicy(max_attempts=2))
+
+graph = builder.compile(cache=InMemoryCache())   # caching needs a cache backend
+```
+
+- Timeouts only apply to async nodes and raise `NodeTimeoutError`; the retry policy decides
+  whether to retry.
+- `error_handler=` on `add_node` or `set_node_defaults` runs a handler node when a node raises
+  (a failing handler fails the run).
+- Policies set with `set_node_defaults` are not inherited by subgraphs.
 
 ## Functional API
 
-For simpler task-based flows:
+Write workflows as plain functions while keeping checkpoints and interrupts:
 
 ```python
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.func import entrypoint, task
 
 @task
-def step_one(data: str) -> str:
-    return f"processed: {data}"
+def draft(topic: str) -> str:
+    return f"Draft about {topic}"
 
-@task  
-def step_two(data: str) -> str:
-    return f"finalized: {data}"
+@task
+def polish(text: str) -> str:
+    return text + " (polished)"
 
-@entrypoint()
-def workflow(input: str):
-    result = step_one(input).result()
-    return step_two(result).result()
+@entrypoint(checkpointer=InMemorySaver())
+def workflow(topic: str) -> str:
+    text = draft(topic).result()   # tasks return futures; results are checkpointed
+    return polish(text).result()
+
+workflow.invoke("agents", config={"configurable": {"thread_id": "w1"}})
 ```
 
 ## Persistence
 
-### Checkpointers
+### Checkpointers (Short-Term, Per Thread)
 
 ```python
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.postgres import PostgresSaver
 
-# In-memory (dev)
-checkpointer = InMemorySaver()
+graph = builder.compile(checkpointer=InMemorySaver())   # dev and tests
 
-# SQLite (simple persistence)
-checkpointer = SqliteSaver.from_conn_string("sqlite:///agent.db")
+# from_conn_string() is a context manager; SQLite takes a file path, not a URL
+with SqliteSaver.from_conn_string("checkpoints.sqlite") as checkpointer:
+    graph = builder.compile(checkpointer=checkpointer)
+    graph.invoke(inputs, config={"configurable": {"thread_id": "1"}})
 
-# PostgreSQL (production)
-checkpointer = PostgresSaver.from_conn_string("postgresql://...")
-
-graph = StateGraph(State)
-# ... build graph ...
-app = graph.compile(checkpointer=checkpointer)
+DB_URI = "postgresql://user:pass@localhost:5432/app?sslmode=disable"
+with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
+    checkpointer.setup()   # create tables once (idempotent)
+    graph = builder.compile(checkpointer=checkpointer)
 ```
 
-### Store (Long-term Memory)
+Async apps use `AsyncSqliteSaver` / `AsyncPostgresSaver` with `async with`. With `create_agent`,
+pass the same object as `checkpointer=`.
+
+### Durability Modes
+
+```python
+graph.invoke(inputs, config, durability="sync")   # "exit" | "async" (default) | "sync"
+```
+
+- `"exit"`: persist only when the run ends or interrupts. Fastest, but no mid-run recovery.
+- `"async"`: persist in the background while the next step runs. Good balance.
+- `"sync"`: persist before each next step. Most durable, slowest.
+
+### Store (Long-Term, Cross-Thread)
 
 ```python
 from langgraph.store.memory import InMemoryStore
-from langgraph.store.postgres import PostgresStore
+from langchain.embeddings import init_embeddings
 
-store = InMemoryStore()
+store = InMemoryStore(index={"embed": init_embeddings("openai:text-embedding-3-small"), "dims": 1536})
 
-# Write
-store.put(("users",), "user123", {"name": "Alice", "prefs": {...}})
-
-# Read
-item = store.get(("users",), "user123")
+store.put(("users", "user123"), "prefs", {"theme": "dark", "language": "fr"})
+item = store.get(("users", "user123"), "prefs")
 data = item.value if item else None
 
-# Search
-results = store.search(("users",), filter={"name": "Alice"})
+results = store.search(("users", "user123"), query="language preference", limit=5)   # semantic
+results = store.search(("users",), filter={"theme": "dark"})                          # exact match
+```
+
+Production: `PostgresStore.from_conn_string(DB_URI)` (context manager, call `.setup()`).
+Inside nodes and tools, use `runtime.store` rather than a global.
+
+## Runtime Context
+
+```python
+from dataclasses import dataclass
+from langgraph.runtime import Runtime
+
+@dataclass
+class Context:
+    user_id: str
+
+def call_model(state: MessagesState, runtime: Runtime[Context]) -> dict:
+    memories = runtime.store.search(("memories", runtime.context.user_id), query=state["messages"][-1].text)
+    ...
+
+builder = StateGraph(MessagesState, context_schema=Context)
+# graph.invoke(inputs, config, context=Context(user_id="1"))
 ```
 
 ## Interrupts (Human-in-the-Loop)
@@ -108,59 +191,72 @@ results = store.search(("users",), filter={"name": "Alice"})
 from langgraph.types import interrupt, Command
 
 def sensitive_action(state: State) -> dict:
-    # Pause for human approval
-    approval = interrupt({
-        "action": "delete_all",
-        "message": "Approve deletion?"
-    })
-    
-    if approval.get("approved"):
-        return {"status": "deleted"}
-    return {"status": "cancelled"}
+    approval = interrupt({"action": "delete_all", "message": "Approve deletion?"})
+    return {"status": "deleted" if approval.get("approved") else "cancelled"}
 
-# Resume with approval
-app.invoke(Command(resume={"approved": True}), config=config)
+config = {"configurable": {"thread_id": "t1"}}           # interrupts need a checkpointer
+result = graph.invoke(inputs, config=config, version="v2")
+if result.interrupts:
+    print(result.interrupts[0].value)                    # payload passed to interrupt()
+    result = graph.invoke(Command(resume={"approved": True}), config=config, version="v2")
 ```
+
+The interrupted node re-runs from its start on resume, so keep side effects after the
+`interrupt()` call or make them idempotent. Without `version="v2"`, pending interrupts appear
+under `result["__interrupt__"]`.
 
 ## Streaming
 
 ```python
-# Stream all events
-for event in app.stream({"messages": [...]}, stream_mode="values"):
-    print(event)
+# Event streaming (v3): typed projections, recommended for apps and UIs
+stream = graph.stream_events(inputs, config, version="v3")
+for snapshot in stream.values:          # full state after each step
+    print(snapshot)
+final = stream.output
 
-# Stream specific updates
-async for chunk in app.astream(input, stream_mode="updates"):
-    for node, update in chunk.items():
-        print(f"{node}: {update}")
+# Classic stream modes: values, updates, messages, custom, checkpoints, tasks, debug
+for mode, chunk in graph.stream(inputs, config, stream_mode=["updates", "messages"]):
+    if mode == "updates":
+        for node, update in chunk.items():
+            print(node, update)
+    else:
+        token, metadata = chunk
+        print(token.content, end="")
+
+# Custom progress events from inside a node or tool
+from langgraph.config import get_stream_writer
+
+def long_step(state: State) -> dict:
+    get_stream_writer()({"progress": 0.5})
+    return {}
 ```
+
+Pass `subgraphs=True` to `stream` to include events from nested graphs. Event streaming is
+experimental in 1.2 and emits a `LangChainBetaWarning`.
 
 ## Subgraphs
 
-Compose graphs within graphs:
-
 ```python
-# Child graph
 child = StateGraph(ChildState)
 child.add_node("process", process_fn)
-child_app = child.compile()
+child.add_edge(START, "process")
+child_graph = child.compile()
 
-# Parent graph
 parent = StateGraph(ParentState)
-parent.add_node("child_workflow", child_app)
+parent.add_node("child_workflow", child_graph)   # shares keys with the parent state
 parent.add_edge(START, "child_workflow")
-parent_app = parent.compile()
+parent_graph = parent.compile(checkpointer=InMemorySaver())   # the child inherits it
 ```
+
+If the schemas differ, call the subgraph inside a regular node and map state in and out.
 
 ## Time Travel
 
-Replay from any checkpoint:
-
 ```python
-# Get history
-history = list(app.get_state_history(config))
+history = list(graph.get_state_history(config))   # newest first
+past = history[2]
+graph.invoke(None, config=past.config)            # replay from that checkpoint
 
-# Replay from specific point
-past_config = history[2].config
-result = app.invoke(None, config=past_config)
+forked = graph.update_state(past.config, {"step_count": 0})   # fork with edited state
+graph.invoke(None, config=forked)
 ```

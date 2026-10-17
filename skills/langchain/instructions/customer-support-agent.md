@@ -4,7 +4,7 @@ Write a **self-contained Python module** and save it as **`agent.py`** in the cu
 
 Your `agent.py` must include, in order:
 
-1. **Model configuration** — configure the chat model with `init_chat_model` from `langchain.chat_models` using any current provider/model id (e.g. `claude-sonnet-4-5-20250929`). Pick a sensible `temperature` for a support agent.
+1. **Model configuration** — configure the chat model with `init_chat_model` from `langchain.chat_models` using any current provider/model id (e.g. `anthropic:claude-sonnet-5`). Pick a sensible `temperature` for a support agent.
 
 2. **At least two tools** decorated with `@tool` from `langchain.tools`. Every tool must have:
    - type hints on **every parameter** and on the **return value**, and

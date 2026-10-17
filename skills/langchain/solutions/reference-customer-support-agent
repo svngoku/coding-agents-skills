@@ -49,7 +49,7 @@ class Response:
 
 def build_agent():
     """Configure and return the customer-support agent."""
-    model = init_chat_model("claude-sonnet-4-5-20250929", temperature=0)
+    model = init_chat_model("anthropic:claude-sonnet-5", temperature=0)
     return create_agent(
         model=model,
         system_prompt=(

@@ -73,6 +73,7 @@ coding-agents-skills/
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │       ├── langgraph.md
+│   │       ├── middleware.md
 │   │       ├── multi-agent.md
 │   │       └── retrieval.md
 │   │
@@ -282,15 +283,19 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 ### 6. LangChain
 **Status:** ✅ Complete
 
-**Description:** Build AI applications with the LangChain framework.
+**Description:** Build AI agents with LangChain v1 and LangGraph. Verified against `langchain` 1.4.6, `langgraph` 1.2 and `deepagents` 0.7 using the current docs.
 
 **Capabilities:**
-- Chain construction and composition
-- Memory management and stateful agents (LangGraph checkpointing)
-- Agent creation and orchestration
-- Tool integration with `ToolRuntime` context
-- Structured output and MCP integration
-- RAG (Retrieval-Augmented Generation) patterns
+- `create_agent`, `init_chat_model`, model profiles and `ToolRuntime` context
+- Middleware: summarization, retries, fallbacks, call limits, PII, human-in-the-loop, and custom hooks
+- Structured output with `ToolStrategy` / `ProviderStrategy`
+- Built-in MCP client (`langchain.mcp.MCPAdapter`) replacing `langchain-mcp-adapters`
+- Event streaming (`stream_events(version="v3")`), checkpointers, stores and durability modes
+- Multi-agent patterns (subagents, handoffs, routers, skills) and Deep Agents
+- RAG with provider packages, `langchain_text_splitters` and `langchain_classic` retrievers
+- Migration table from 0.x APIs (`create_react_agent`, chains, MCP interceptors)
+
+**Reference Files:** 4 guides
 
 ---
 
@@ -563,7 +568,7 @@ def load_skill(skill_path: str) -> str:
     return open(skill_path).read()
 
 agent = create_agent(
-    model=init_chat_model("claude-sonnet-4-5-20250929", temperature=0),
+    model=init_chat_model("anthropic:claude-sonnet-5", temperature=0),
     system_prompt="You are a software architecture advisor.",
     tools=[load_skill],
 )
