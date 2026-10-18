@@ -4,9 +4,10 @@ description: >
   Build AI agents with LangChain v1 and LangGraph in Python. Use this skill whenever the user
   mentions LangChain, LangGraph, create_agent, init_chat_model, @tool, ToolRuntime, agent
   middleware, human-in-the-loop, structured output, MCP tools (langchain.mcp, MCPAdapter),
-  RAG, multi-agent handoffs or subagents, checkpointers, or Deep Agents. Also trigger for
-  migrating from create_react_agent, LLMChain, AgentExecutor or langchain-mcp-adapters,
-  stream_events, SummarizationMiddleware, and langchain-classic.
+  RAG, multi-agent handoffs or subagents, checkpointers, Deep Agents (create_deep_agent) or
+  Managed Deep Agents (mda, define_deep_agent). Also trigger for migrating from
+  create_react_agent, LLMChain, AgentExecutor or langchain-mcp-adapters, stream_events,
+  SummarizationMiddleware, and langchain-classic.
 ---
 
 # LangChain Skill
@@ -21,7 +22,8 @@ system, built-in MCP support and the LangGraph runtime. Verified against `langch
 |-------|------|
 | Built-in and custom middleware | [references/middleware.md](references/middleware.md) |
 | LangGraph graphs, persistence, durability, streaming | [references/langgraph.md](references/langgraph.md) |
-| Subagents, handoffs, skills, routers, Deep Agents | [references/multi-agent.md](references/multi-agent.md) |
+| Subagents, handoffs, skills, routers | [references/multi-agent.md](references/multi-agent.md) |
+| Deep Agents harness and Managed Deep Agents (`mda`) | [references/deep-agents.md](references/deep-agents.md) |
 | RAG, embeddings, vector stores, retrievers | [references/retrieval.md](references/retrieval.md) |
 
 ## Installation
@@ -63,10 +65,7 @@ from langchain.chat_models import init_chat_model
 
 model = init_chat_model(
     "anthropic:claude-sonnet-5",   # "provider:model"; e.g. "openai:gpt-5.5", "google_genai:gemini-3.6-flash"
-    temperature=0,
-    timeout=30,
-    max_tokens=2000,
-    max_retries=2,
+    temperature=0, timeout=30, max_tokens=2000, max_retries=2,
 )
 
 model.profile["max_input_tokens"]    # model capabilities (from models.dev): context size, tool calling, modalities
@@ -149,8 +148,7 @@ Schemas can be Pydantic models, dataclasses, `TypedDict`s or JSON schema dicts. 
 
 ## Middleware
 
-Middleware is the v1 extension point that replaces pre/post hooks. Built-ins come from
-`langchain.agents.middleware`:
+Middleware is the v1 extension point that replaces pre/post hooks. Built-ins live in `langchain.agents.middleware`:
 
 ```python
 from langchain.agents import create_agent
@@ -289,8 +287,10 @@ def set_language(language: str, runtime: ToolRuntime) -> Command:
 ## Deep Agents
 
 `deepagents` wraps `create_agent` with a virtual filesystem, a `task` tool for subagents,
-summarization, and optional skills and memory files, for long multi-step tasks. Backends, planning
-(`TodoListMiddleware`) and interrupts are covered in [references/multi-agent.md](references/multi-agent.md).
+summarization, and optional skills, memory files, permissions and sandboxes, for long multi-step
+tasks. Managed Deep Agents (`managed-deepagents`, CLI `mda`) deploys the same harness to LangSmith
+from a project directory (`agent.py` with `define_deep_agent`, `instructions.md`, `memory.py`,
+`sandbox/`, `schedules/`). Both are covered in [references/deep-agents.md](references/deep-agents.md).
 
 ```python
 from deepagents import create_deep_agent
@@ -379,7 +379,7 @@ print(result["structured_response"])
 
 - Building agents with LangChain v1 or LangGraph in Python
 - Adding tools, memory, middleware, human approval, MCP servers or structured output to an LLM app
-- Implementing RAG, subagents, handoffs, routers, Deep Agents or stateful workflows
+- Implementing RAG, subagents, handoffs, routers, Deep Agents (self-hosted or managed) or stateful workflows
 - Migrating 0.x code (`create_react_agent`, `AgentExecutor`, chains, `langchain-mcp-adapters`)
 
 **Do NOT use this skill when:**
@@ -395,5 +395,6 @@ print(result["structured_response"])
 - MCP: https://docs.langchain.com/oss/python/langchain/mcp/connections
 - From langchain-mcp-adapters: https://docs.langchain.com/oss/python/migrate/langchain-mcp-adapters
 - Event streaming: https://docs.langchain.com/oss/python/langchain/event-streaming
-- Deep Agents: https://docs.langchain.com/oss/python/deepagents/customization
+- Deep Agents: https://docs.langchain.com/oss/python/deepagents/overview
+- Managed Deep Agents: https://docs.langchain.com/langsmith/python/managed-deep-agents-overview
 - API reference: https://reference.langchain.com/python

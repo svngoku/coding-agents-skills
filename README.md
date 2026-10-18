@@ -72,6 +72,7 @@ coding-agents-skills/
 │   ├── langchain/                      # LangChain framework
 │   │   ├── SKILL.md
 │   │   └── references/
+│   │       ├── deep-agents.md
 │   │       ├── langgraph.md
 │   │       ├── middleware.md
 │   │       ├── multi-agent.md
@@ -283,7 +284,7 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 ### 6. LangChain
 **Status:** ✅ Complete
 
-**Description:** Build AI agents with LangChain v1 and LangGraph. Verified against `langchain` 1.4.6, `langgraph` 1.2 and `deepagents` 0.7 using the current docs.
+**Description:** Build AI agents with LangChain v1 and LangGraph. Verified against `langchain` 1.4.6, `langgraph` 1.2, `deepagents` 0.7 and `managed-deepagents` 0.9 using the current docs.
 
 **Capabilities:**
 - `create_agent`, `init_chat_model`, model profiles and `ToolRuntime` context
@@ -291,11 +292,13 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 - Structured output with `ToolStrategy` / `ProviderStrategy`
 - Built-in MCP client (`langchain.mcp.MCPAdapter`) replacing `langchain-mcp-adapters`
 - Event streaming (`stream_events(version="v3")`), checkpointers, stores and durability modes
-- Multi-agent patterns (subagents, handoffs, routers, skills) and Deep Agents
+- Multi-agent patterns (subagents, handoffs, routers, skills)
+- Deep Agents harness: backends, permissions, sandboxes, code interpreter, sync/fork/async subagents
+- Managed Deep Agents on LangSmith (`mda` CLI): memory, identity, connections, sandboxes, schedules
 - RAG with provider packages, `langchain_text_splitters` and `langchain_classic` retrievers
 - Migration table from 0.x APIs (`create_react_agent`, chains, MCP interceptors)
 
-**Reference Files:** 4 guides
+**Reference Files:** 5 guides
 
 ---
 

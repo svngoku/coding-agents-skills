@@ -254,6 +254,9 @@ result = agent.invoke({"messages": [{"role": "user", "content": "Compare LangGra
 - Seed the default `StateBackend` per run with `{"files": {"/path": create_file_data(text)}}`
   (`deepagents.backends.utils`).
 
+Permissions, sandboxes, the code interpreter, fork and async subagents, subagent streaming,
+harness profiles and Managed Deep Agents (`mda`) are covered in [deep-agents.md](deep-agents.md).
+
 ## Anti-Patterns
 
 - Importing invented helpers (`with_handoffs`, `create_router`, `create_subagent_tool`, `create_skill_manager`): use the patterns above
