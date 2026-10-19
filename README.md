@@ -151,7 +151,13 @@ coding-agents-skills/
 ├── docs/
 │   └── eval-guidelines.md           # skillgrade eval conventions & coverage
 ├── scripts/
-│   └── run-evals.sh                 # local eval runner (no CI)
+│   ├── run-evals.sh                 # local eval runner (no CI)
+│   ├── build-site.py                # generates the static skill gallery
+│   └── site-template.html           # page template used by the generator
+├── site/
+│   └── index.html                   # generated gallery (published with GitHub Pages)
+├── .github/workflows/
+│   └── pages.yml                    # rebuilds and deploys the gallery on push
 └── .gitignore                       # ignores .evals/ output
 ```
 
@@ -622,6 +628,66 @@ description: >
 - Reference files are in Markdown format
 - Cover specific aspects of the skill in depth
 - Include code examples in relevant languages
+
+## 🌐 Gallery Site
+
+The collection has a browsable gallery: <https://svngoku.github.io/coding-agents-skills/>
+
+It is a single static page (Tailwind CSS v4 from the CDN, no framework) generated from `skills/`:
+
+```bash
+python3 scripts/build-site.py          # writes site/index.html
+python3 scripts/build-site.py --check  # fails if site/index.html is out of date
+```
+
+The generator reads each `SKILL.md` frontmatter, the per-skill sections of this README, the
+`references/` and `scripts/` folders, and every `eval.yaml`, then renders:
+
+- **Cards** — description, capabilities, reference guides, scripts and eval status per skill
+- **Matrix** — artifact coverage per skill (guides, scripts, tasks, graders, rubrics, solutions)
+- **Filters** — free-text search, category chips, sorting, dark/light theme, `#skill-<name>` deep links
+- **Document viewer** — click a skill to read its `SKILL.md` and every reference guide and
+  example script rendered in the page, with a file switcher and links to the GitHub source
+
+The page follows this repo's own [`ui` skill](skills/ui/SKILL.md) and the
+[ui-skills.com](https://www.ui-skills.com/) polish rules: one accent colour, a neutral (never
+blue) dark palette, `text-balance`/`text-pretty`/`tabular-nums` typography, visible focus rings,
+44px touch targets, 0.96 press feedback and no motion under `prefers-reduced-motion`.
+
+It is responsive from 320px up: one card column on phones, two on tablets, three on wide
+screens, with the search field taking a full row on small viewports and the document viewer
+stacking its file list above the content.
+
+If the Tailwind CDN cannot be reached (offline, proxy, extension), a small baseline stylesheet
+takes over so the gallery still renders with the same layout, typography and dark theme instead
+of collapsing into unstyled markup. The page waits about a second for the CDN build before its
+first paint, so it never shows one style and then swaps to another.
+
+### Typography
+
+The gallery is set in **NB International Pro**. The typeface is commercial, so the licensed
+`woff2` files are not committed: drop them in `site/fonts/` (git-ignored) or point the generator
+at a CDN that serves them.
+
+```bash
+# expected file names inside site/fonts/
+NBInternationalPro-Variable.woff2   # optional, used for every weight
+NBInternationalPro-Regular.woff2
+NBInternationalPro-Medium.woff2
+NBInternationalPro-SemiBold.woff2
+NBInternationalPro-Bold.woff2
+
+# or serve the files from somewhere else
+NB_FONT_URL=https://cdn.example.com/fonts python3 scripts/build-site.py
+
+# or point at a stylesheet that already declares the @font-face rules
+NB_FONT_CSS=https://cdn.example.com/nb-fonts.css python3 scripts/build-site.py
+```
+
+Without the files the page falls back to the system sans stack and stays readable.
+
+`.github/workflows/pages.yml` rebuilds the page on every push to `main` and deploys it to
+GitHub Pages, and fails the build if `site/index.html` no longer matches `skills/`.
 
 ## 🧪 Evaluating Skills
 

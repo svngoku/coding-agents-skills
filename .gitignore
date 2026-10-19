@@ -5,5 +5,8 @@
 __pycache__/
 *.pyc
 
+# Licensed webfonts (NB International Pro) served with the gallery
+site/fonts/
+
 # OS noise
 .DS_Store

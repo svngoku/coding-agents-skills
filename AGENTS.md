@@ -27,6 +27,8 @@ coding-agents-skills/
 │   └── ...
 ├── docs/eval-guidelines.md    # Eval layout and authoring rules
 ├── scripts/run-evals.sh       # Local eval runner
+├── scripts/build-site.py      # Generates the static skill gallery (site/index.html)
+├── site/index.html            # Generated gallery, published with GitHub Pages
 ├── README.md                  # REQUIRED — human-facing overview
 ├── AGENTS.md                  # THIS FILE
 └── LICENSE                    # REQUIRED — MIT
@@ -170,6 +172,10 @@ When modifying an existing skill:
    - The skill's capabilities change significantly
    - Reference files are added/removed
    - Status changes (e.g., from In Progress to Complete)
+6. **Rebuild the gallery** — run `python3 scripts/build-site.py` and commit the regenerated
+   `site/index.html`. The Pages workflow fails when the committed page no longer matches `skills/`.
+   The generator also renders each skill's Markdown into the page, so a docs edit shows up in
+   the gallery after a rebuild.
 
 ## README Maintenance Rules
 
@@ -232,9 +238,11 @@ When editing files in this repo:
 ## No Build, No CI, No Deploy
 
 This repository has:
-- **No build system** — Markdown is the artifact
-- **No CI/CD** — Manual commits; evaluations run locally
-- **No runtime dependencies** — Graders use the Python standard library only
+- **No build system** — Markdown is the artifact. The optional gallery generator
+  (`scripts/build-site.py`) is a standalone script, not a build step for the skills
+- **No CI for evals** — Manual commits; evaluations run locally. The only workflow
+  (`.github/workflows/pages.yml`) rebuilds and deploys the gallery
+- **No runtime dependencies** — Graders and the site generator use the Python standard library only
 - **Evaluations** — Every skill ships a skillgrade harness, run with `./scripts/run-evals.sh`
 
 Treat it as a **documentation codebase**. The structural checks are:
