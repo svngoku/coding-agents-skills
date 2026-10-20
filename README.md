@@ -75,13 +75,33 @@ plain file copies instead of linked entries. Add `-y` to skip prompts in scripts
 npx skills add svngoku/coding-agents-skills --skill ddd -g -a claude-code -y
 ```
 
-### Keeping them up to date
+### Updating the skills
+
+Project installs record their source in `skills-lock.json` and global installs (`-g`) record
+theirs in `~/skills-lock.json`; `update` re-reads the file for the scope it runs against.
 
 ```bash
-npx skills list        # what is installed, and where
-npx skills update      # update the installed skills to their latest versions
-npx skills remove ddd  # uninstall one skill
+# Update every skill in the current project
+npx skills update
+
+# Update one skill, or several
+npx skills update ddd
+npx skills update ddd langchain
+
+# Restrict the run to one scope, or skip the scope prompt
+npx skills update -g
+npx skills update -p
+npx skills update -y
 ```
+
+| Option          | Description                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| `-g, --global`  | Only update global skills                                          |
+| `-p, --project` | Only update project skills                                         |
+| `-y, --yes`     | Skip the scope prompt: project inside a project, global otherwise  |
+| `<skills...>`   | Update the named skills instead of every installed skill            |
+
+Check what is installed with `npx skills list`, and uninstall with `npx skills remove ddd`.
 
 ## 🗂️ Project Structure
 

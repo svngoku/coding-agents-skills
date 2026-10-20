@@ -957,7 +957,7 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
             <h2 id="install-title" class="text-lg font-semibold text-balance text-neutral-900 dark:text-neutral-100">
-              Install these skills
+              Install and update the skills
             </h2>
             <p class="mt-1 max-w-2xl text-pretty text-sm text-neutral-600 dark:text-neutral-300">
               The
@@ -996,10 +996,27 @@
               class="install-command"
             ><code>npx skills add svngoku/coding-agents-skills --skill '*' -a claude-code</code></pre>
           </div>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">Update all</p>
+            <pre
+              tabindex="0"
+              class="install-command"
+            ><code>npx skills update</code></pre>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">Update one</p>
+            <pre
+              tabindex="0"
+              class="install-command"
+            ><code>npx skills update ddd</code></pre>
+          </div>
         </div>
         <p class="mt-3 text-pretty text-xs text-neutral-500 dark:text-neutral-400">
           Omit <code class="inline-code">--skill</code> to choose interactively, or add
-          <code class="inline-code">-g</code> to install for every project.
+          <code class="inline-code">-g</code> to install for every project. Updates re-read the
+          lock file for their scope; pass
+          <code class="inline-code">-g</code> or <code class="inline-code">-p</code> to
+          <code class="inline-code">update</code> to target one scope.
         </p>
       </section>
 
