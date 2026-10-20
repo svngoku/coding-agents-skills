@@ -155,7 +155,8 @@ coding-agents-skills/
 │   ├── build-site.py                # generates the static skill gallery
 │   └── site-template.html           # page template used by the generator
 ├── site/
-│   └── index.html                   # generated gallery (published with GitHub Pages)
+│   ├── index.html                   # generated gallery (published with GitHub Pages)
+│   └── fonts/aspekta/               # bundled OFL body font + licence
 ├── .github/workflows/
 │   └── pages.yml                    # rebuilds and deploys the gallery on push
 └── .gitignore                       # ignores .evals/ output
@@ -647,7 +648,9 @@ The generator reads each `SKILL.md` frontmatter, the per-skill sections of this 
 - **Matrix** — artifact coverage per skill (guides, scripts, tasks, graders, rubrics, solutions)
 - **Filters** — free-text search, category chips, sorting, dark/light theme, `#skill-<name>` deep links
 - **Document viewer** — click a skill to read its `SKILL.md` and every reference guide and
-  example script rendered in the page, with a file switcher and links to the GitHub source
+  example script rendered in the page, with a file switcher and links to the GitHub source.
+  Fenced code is colourised by language with [highlight.js](https://highlightjs.org/), using the
+  gallery's own palette (no blue), and unknown fences fall back to plain text.
 
 The page follows this repo's own [`ui` skill](skills/ui/SKILL.md) and the
 [ui-skills.com](https://www.ui-skills.com/) polish rules: one accent colour, a neutral (never
@@ -665,9 +668,13 @@ first paint, so it never shows one style and then swaps to another.
 
 ### Typography
 
-The gallery is set in **NB International Pro**. The typeface is commercial, so the licensed
-`woff2` files are not committed: drop them in `site/fonts/` (git-ignored) or point the generator
-at a CDN that serves them.
+Body copy is set in **Aspekta**, a sans-serif by Ivo Dolenc released under the SIL Open Font
+License 1.1. The variable `woff2` (weights 100–900) is bundled at `site/fonts/aspekta/` next to
+its licence, so the page ships real weights and stays consistent offline.
+
+Headings and card titles are set in **NB International Pro**. The typeface is commercial, so the
+licensed `woff2` files are not committed: drop them in `site/fonts/` (git-ignored) or point the
+generator at a CDN that serves them.
 
 ```bash
 # expected file names inside site/fonts/
@@ -684,7 +691,8 @@ NB_FONT_URL=https://cdn.example.com/fonts python3 scripts/build-site.py
 NB_FONT_CSS=https://cdn.example.com/nb-fonts.css python3 scripts/build-site.py
 ```
 
-Without the files the page falls back to the system sans stack and stays readable.
+Until the licensed files are available, titles fall back to Aspekta, so the page keeps a coherent
+look; if both are missing it falls back to the system sans stack.
 
 `.github/workflows/pages.yml` rebuilds the page on every push to `main` and deploys it to
 GitHub Pages, and fails the build if `site/index.html` no longer matches `skills/`.

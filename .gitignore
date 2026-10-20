@@ -5,8 +5,10 @@
 __pycache__/
 *.pyc
 
-# Licensed webfonts (NB International Pro) served with the gallery
-site/fonts/
+# Licensed webfonts (NB International Pro) served with the gallery.
+# Aspekta (OFL) is bundled and tracked; keep everything else out.
+site/fonts/*
+!site/fonts/aspekta/
 
 # OS noise
 .DS_Store

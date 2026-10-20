@@ -57,7 +57,7 @@
 
       html:not([data-tailwind="ready"]) body {
         margin: 0;
-        font-family: "NB International Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        font-family: "Aspekta", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
         line-height: 1.5;
         background: #fafafa;
@@ -162,6 +162,13 @@
         font-size: 0.75rem;
         font-weight: 500;
         text-transform: uppercase;
+      }
+
+      html:not([data-tailwind="ready"]) h1,
+      html:not([data-tailwind="ready"]) h2,
+      html:not([data-tailwind="ready"]) h3,
+      html:not([data-tailwind="ready"]) h4 {
+        font-family: "NB International Pro", "Aspekta", ui-sans-serif, system-ui, sans-serif;
       }
 
       html:not([data-tailwind="ready"]) h1 {
@@ -481,10 +488,147 @@
         }, 1200);
       })();
     </script>
+    <!-- Syntax highlighting for the code blocks rendered in the document viewer. -->
+    <style id="code-theme">
+      /* highlight.js tokens, coloured with the gallery palette: amber keywords,
+         emerald strings, rose literals, neutral structure. No blue. */
+      .hljs-comment,
+      .hljs-quote {
+        color: #737373;
+        font-style: italic;
+      }
+
+      .hljs-keyword,
+      .hljs-selector-tag,
+      .hljs-doctag,
+      .hljs-meta .hljs-keyword {
+        color: #b45309;
+      }
+
+      .hljs-string,
+      .hljs-regexp,
+      .hljs-addition,
+      .hljs-attribute {
+        color: #047857;
+      }
+
+      .hljs-number,
+      .hljs-literal,
+      .hljs-symbol,
+      .hljs-bullet,
+      .hljs-deletion {
+        color: #be123c;
+      }
+
+      .hljs-title,
+      .hljs-title.function_,
+      .hljs-title.class_,
+      .hljs-section,
+      .hljs-selector-id,
+      .hljs-selector-class {
+        color: #0f766e;
+        font-weight: 600;
+      }
+
+      .hljs-type,
+      .hljs-built_in,
+      .hljs-attr,
+      .hljs-property,
+      .hljs-params,
+      .hljs-name,
+      .hljs-tag,
+      .hljs-variable,
+      .hljs-template-variable {
+        color: #404040;
+      }
+
+      .hljs-meta {
+        color: #737373;
+      }
+
+      .hljs-emphasis {
+        font-style: italic;
+      }
+
+      .hljs-strong {
+        font-weight: 700;
+      }
+
+      .dark .hljs-comment,
+      .dark .hljs-quote,
+      .dark .hljs-meta {
+        color: #a3a3a3;
+      }
+
+      .dark .hljs-keyword,
+      .dark .hljs-selector-tag,
+      .dark .hljs-doctag {
+        color: #fbbf24;
+      }
+
+      .dark .hljs-string,
+      .dark .hljs-regexp,
+      .dark .hljs-addition,
+      .dark .hljs-attribute {
+        color: #34d399;
+      }
+
+      .dark .hljs-number,
+      .dark .hljs-literal,
+      .dark .hljs-symbol,
+      .dark .hljs-bullet,
+      .dark .hljs-deletion {
+        color: #fb7185;
+      }
+
+      .dark .hljs-title,
+      .dark .hljs-title.function_,
+      .dark .hljs-title.class_,
+      .dark .hljs-section,
+      .dark .hljs-selector-id,
+      .dark .hljs-selector-class {
+        color: #2dd4bf;
+      }
+
+      .dark .hljs-type,
+      .dark .hljs-built_in,
+      .dark .hljs-attr,
+      .dark .hljs-property,
+      .dark .hljs-params,
+      .dark .hljs-name,
+      .dark .hljs-tag,
+      .dark .hljs-variable,
+      .dark .hljs-template-variable {
+        color: #d4d4d4;
+      }
+    </style>
+
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.12.0/build/highlight.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.12.0/build/languages/http.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.12.0/build/languages/nginx.min.js"
+    ></script>
+
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     {{FONT_CSS}}
-    <style type="text/tailwindcss">
-      @custom-variant dark (&:where(.dark, .dark *));
+    <style id="font-faces">
+      /* Aspekta — SIL Open Font License 1.1 (Ivo Dolenc). Bundled as a single
+         30 KB variable file so body text ships with real 100-900 weights.
+         Source: https://github.com/ivodolenc/aspekta (LICENSE.txt sits next to it). */
+      @font-face {
+        font-family: "Aspekta";
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url("fonts/aspekta/AspektaVF.woff2") format("woff2");
+      }
 
       /* NB International Pro — commercial licence (Storm Type).
          Serve the licensed woff2 files from {{FONT_URL}} (default: the "fonts"
@@ -525,6 +669,11 @@
         src: url("{{FONT_URL}}/NBInternationalPro-Variable.woff2") format("woff2"),
           url("{{FONT_URL}}/NBInternationalPro-Bold.woff2") format("woff2");
       }
+
+    </style>
+
+    <style type="text/tailwindcss">
+      @custom-variant dark (&:where(.dark, .dark *));
 
       /* Fixed z-index scale: only these steps exist, and only these are used. */
       @utility z-skip-link {
@@ -638,9 +787,20 @@
       }
 
       @theme {
-        --font-sans: "NB International Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        --font-sans: "Aspekta", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
+        --font-title: "NB International Pro", "Aspekta", ui-sans-serif, system-ui, -apple-system,
+          "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      }
+
+      /* Headings and card titles keep NB International Pro; body copy is Aspekta.
+         Without the licensed NB files the title stack falls through to Aspekta. */
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: var(--font-title);
       }
     </style>
   </head>
@@ -1051,6 +1211,55 @@
           if (!viewer.open) viewer.showModal();
         }
 
+        // Code blocks are colourised by language with highlight.js (loaded with
+        // defer). Unknown or unsupported fences fall back to a close relative
+        // and then to plain text, so a fence never breaks the viewer.
+        var HLJS_ALIASES = {
+          sh: "bash",
+          shell: "bash",
+          zsh: "bash",
+          js: "javascript",
+          jsx: "javascript",
+          ts: "typescript",
+          tsx: "typescript",
+          html: "xml",
+          tf: "ini",
+          hcl: "ini",
+          terraform: "ini",
+          text: "plaintext",
+          mermaid: "plaintext",
+          prisma: "plaintext"
+        };
+
+        function highlightCode(root) {
+          if (!root || !root.querySelectorAll) return;
+          if (!window.hljs) {
+            if (!window.__hljsHooked) {
+              window.__hljsHooked = true;
+              window.addEventListener("load", function () {
+                highlightCode(document.getElementById("viewer-content"));
+              });
+            }
+            return;
+          }
+          if (!window.__hljsConfigured) {
+            window.hljs.configure({ ignoreUnescapedHTML: true, throwUnescapedHTML: false });
+            window.__hljsConfigured = true;
+          }
+          Array.prototype.forEach.call(root.querySelectorAll("pre code"), function (block) {
+            if (block.getAttribute("data-highlighted") === "yes") return;
+            var match = (block.className || "").match(/language-([\w+#.-]+)/);
+            var name = match ? HLJS_ALIASES[match[1].toLowerCase()] || match[1].toLowerCase() : "";
+            if (name && !window.hljs.getLanguage(name)) name = "plaintext";
+            block.className = "language-" + (name || "plaintext");
+            try {
+              window.hljs.highlightElement(block);
+            } catch (error) {
+              block.className = "";
+            }
+          });
+        }
+
         function showFile(files, path) {
           var file = null;
           for (var index = 0; index < files.length; index += 1) {
@@ -1063,6 +1272,7 @@
           if (!file) return;
           viewerPath.textContent = "skills/" + currentSkill + "/" + file.path;
           viewerContent.innerHTML = file.html;
+          highlightCode(viewerContent);
           viewerRaw.setAttribute("href", file.url);
           viewerContent.scrollTop = 0;
           Array.prototype.forEach.call(viewerNav.querySelectorAll("[data-viewer-file]"), function (button) {

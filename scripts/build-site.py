@@ -468,7 +468,8 @@ def render_cards(skills: list[dict]) -> str:
         )
         use_cases = "".join(f"<li>{esc(u)}</li>" for u in skill["useCases"])
         scripts = "".join(
-            f'<li><a href="{esc(s["url"])}" class="font-mono text-xs {LINK_CLASS}">'
+            f'<li class="min-w-0">'
+            f'<a href="{esc(s["url"])}" class="break-words font-mono text-xs {LINK_CLASS}">'
             f'{esc(s["file"])}</a></li>'
             for s in skill["scripts"]
         )
@@ -527,7 +528,7 @@ def render_cards(skills: list[dict]) -> str:
                 {esc(skill["title"])}
               </button>
             </h2>
-            <p class="mt-0.5 font-mono text-xs text-neutral-500 dark:text-neutral-400">
+            <p class="mt-0.5 break-words font-mono text-xs text-neutral-500 dark:text-neutral-400">
               skills/{name}/SKILL.md
             </p>
           </div>

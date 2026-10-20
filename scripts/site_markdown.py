@@ -98,7 +98,8 @@ def render_blocks(lines: list[str]) -> tuple[list[str], int]:
                 index += 1
             klass = f' class="language-{html.escape(language)}"' if language else ""
             code = html.escape("\n".join(body), quote=False)
-            out.append(f"<pre><code{klass}>{code}</code></pre>")
+            # tabindex makes horizontally scrollable blocks reachable by keyboard.
+            out.append(f'<pre tabindex="0"><code{klass}>{code}</code></pre>')
             continue
 
         heading = HEADING_RE.match(line)
