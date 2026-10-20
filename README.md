@@ -689,6 +689,12 @@ Without the files the page falls back to the system sans stack and stays readabl
 `.github/workflows/pages.yml` rebuilds the page on every push to `main` and deploys it to
 GitHub Pages, and fails the build if `site/index.html` no longer matches `skills/`.
 
+One-time setup on a fresh fork or clone: enable Pages under **Settings → Pages → Build and
+deployment → Source: GitHub Actions**. The workflow's `configure-pages` step can create the site
+itself, but only for a token that is allowed to administer the repository; the default
+`GITHUB_TOKEN` cannot, so the first run fails with "Resource not accessible by integration"
+until Pages exists. Once the site is enabled, pushes deploy normally.
+
 ## 🧪 Evaluating Skills
 
 Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#readme) — "unit tests for your agent skills". A real coding agent runs a task against the skill, and its output is scored by a **deterministic grader** (static API-surface checks) plus an **LLM rubric** (approach quality). The repo standardizes on the **code-generation archetype** (deterministic 0.7 / rubric 0.3), so evaluations are fast and hermetic — no live services required.

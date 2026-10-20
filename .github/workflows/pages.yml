@@ -1,5 +1,11 @@
 name: Deploy gallery to GitHub Pages
 
+# One-time setup on a fresh repository: set Settings -> Pages -> Source to
+# "GitHub Actions". The configure-pages step below tries to create the site
+# automatically, but the default GITHUB_TOKEN cannot administer the repository,
+# so the first run fails with "Resource not accessible by integration" until the
+# Pages site exists.
+
 on:
   push:
     branches: [main]
