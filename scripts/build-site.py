@@ -157,6 +157,11 @@ def repo_url() -> str:
     return "https://github.com/svngoku/coding-agents-skills"
 
 
+def repo_slug() -> str:
+    """owner/repo form used in the install commands."""
+    return repo_url().removeprefix("https://github.com/").removesuffix(".git")
+
+
 def repo_branch() -> str:
     """Branch used for the GitHub links (CI checks out a detached HEAD)."""
     ci_ref = os.environ.get("GITHUB_REF_NAME")
@@ -681,6 +686,7 @@ def build_page(skills: list[dict], font_url: str, font_css: str) -> str:
         "{{CARDS}}": render_cards(skills),
         "{{MATRIX}}": render_matrix(skills),
         "{{REPO_URL}}": repo_url(),
+        "{{REPO_SLUG}}": repo_slug(),
         "{{BRANCH}}": repo_branch(),
         "{{FONT_URL}}": font_url,
         "{{FONT_CSS}}": (

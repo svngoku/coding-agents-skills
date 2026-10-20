@@ -18,6 +18,71 @@ This repository provides production-ready skill modules for AI coding agents, en
 
 Each skill is self-contained with comprehensive documentation, reference materials, and practical examples.
 
+## 📦 Installing the Skills
+
+The collection installs with the [open agent skills CLI](https://github.com/vercel-labs/skills)
+(`npx skills`), which supports OpenCode, Claude Code, Codex, Cursor and
+[75 more agents](https://github.com/vercel-labs/skills/blob/main/docs/agents.md). Requires Node.js
+22.20 or later.
+
+```bash
+# Browse what this repository ships, without installing anything
+npx skills add svngoku/coding-agents-skills --list
+
+# Interactive: choose the skills and the agents to install them for
+npx skills add svngoku/coding-agents-skills
+```
+
+### Install one skill
+
+```bash
+# Just DDD, for Claude Code
+npx skills add svngoku/coding-agents-skills --skill ddd -a claude-code
+
+# Several skills at once
+npx skills add svngoku/coding-agents-skills --skill ddd --skill langchain -a claude-code
+
+# Or point straight at the skill's folder in this repository
+npx skills add https://github.com/svngoku/coding-agents-skills/tree/main/skills/ddd
+```
+
+### Install every skill
+
+```bash
+# All 15 skills, for one agent
+npx skills add svngoku/coding-agents-skills --skill '*' -a claude-code
+
+# All skills, for every agent the CLI can install to, without prompts
+npx skills add svngoku/coding-agents-skills --all
+```
+
+In project scope, agents whose project directory does not exist yet are skipped; `-g` installs at
+user level instead.
+
+### Where they land
+
+| Scope             | Flag | Location                                                         |
+| ----------------- | ---- | ---------------------------------------------------------------- |
+| Project (default) | —    | The agent's project skills directory, e.g. `.claude/skills/ddd`   |
+| Global            | `-g` | The agent's user-level skills directory, e.g. `~/.claude/skills/ddd` |
+
+Directories differ per agent and scope: Claude Code uses `.claude/skills/` (or `~/.claude/skills/`
+when global), while Cursor, Codex and Copilot share `.agents/skills/` in a project — see the
+[agent table](https://github.com/vercel-labs/skills/blob/main/docs/agents.md). `--copy` installs
+plain file copies instead of linked entries. Add `-y` to skip prompts in scripts and CI:
+
+```bash
+npx skills add svngoku/coding-agents-skills --skill ddd -g -a claude-code -y
+```
+
+### Keeping them up to date
+
+```bash
+npx skills list        # what is installed, and where
+npx skills update      # update the installed skills to their latest versions
+npx skills remove ddd  # uninstall one skill
+```
+
 ## 🗂️ Project Structure
 
 ```text
