@@ -7,6 +7,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MarkdownView } from "@/components/MarkdownView";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "cn";
 import type { GalleryDocument, Skill } from "@/lib/types";
@@ -21,6 +31,12 @@ type DocumentDialogProps = {
   onClose: () => void;
   onSelect: (document: GalleryDocument) => void;
 };
+
+const DOCUMENT_GROUPS = [
+  { label: "Skill", kind: "skill" },
+  { label: "Reference guides", kind: "guide" },
+  { label: "Scripts", kind: "script" },
+] as const;
 
 export function DocumentDialog({ selection, onClose, onSelect }: DocumentDialogProps) {
   return (
@@ -45,47 +61,46 @@ export function DocumentDialog({ selection, onClose, onSelect }: DocumentDialogP
               </a>
             </DialogDescription>
             <div className="mt-2">
-              <label htmlFor="document-switcher" className="sr-only">
-                Switch document
-              </label>
-              <select
-                id="document-switcher"
+              <Select
+                items={selection.skill.documents.map((document) => ({
+                  value: document.path,
+                  label: document.label,
+                }))}
                 value={selection.document.path}
-                onChange={(event) => {
-                  const next = selection.skill.documents.find(
-                    (item) => item.path === event.target.value,
-                  );
+                onValueChange={(value) => {
+                  const next = selection.skill.documents.find((item) => item.path === value);
                   if (next) onSelect(next);
                 }}
-                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                {(
-                  [
-                    { label: "Skill", kind: "skill" },
-                    { label: "Reference guides", kind: "guide" },
-                    { label: "Scripts", kind: "script" },
-                  ] as const
-                ).map((group) => {
-                  const documents = selection.skill.documents.filter(
-                    (item) => item.kind === group.kind,
-                  );
-                  if (!documents.length) return null;
-                  return (
-                    <optgroup key={group.kind} label={group.label}>
-                      {documents.map((item) => (
-                        <option key={item.path} value={item.path}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  );
-                })}
-              </select>
+                <SelectTrigger id="document-switcher" aria-label="Switch document" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="start">
+                  {DOCUMENT_GROUPS.map((group) => {
+                    const documents = selection.skill.documents.filter(
+                      (item) => item.kind === group.kind,
+                    );
+                    if (!documents.length) return null;
+                    return (
+                      <SelectGroup key={group.kind}>
+                        <SelectLabel>{group.label}</SelectLabel>
+                        {documents.map((document) => (
+                          <SelectItem key={document.path} value={document.path}>
+                            {document.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
           </DialogHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
-            <MarkdownView html={selection.document.html} />
-          </div>
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="p-5">
+              <MarkdownView html={selection.document.html} />
+            </div>
+          </ScrollArea>
         </DialogContent>
       ) : null}
     </Dialog>

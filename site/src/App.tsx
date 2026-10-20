@@ -1,23 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, FolderGit2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "cn";
-import { DocumentDialog, type DocumentSelection } from "@/components/DocumentDialog";
+import type { DocumentSelection } from "@/components/DocumentDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { FilterBar } from "@/components/FilterBar";
 import { InstallCard } from "@/components/InstallCard";
 import { MatrixTable } from "@/components/MatrixTable";
 import { SkillCard } from "@/components/SkillCard";
-import { SkillDetailsDialog } from "@/components/SkillDetailsDialog";
 import { StatsStrip } from "@/components/StatsStrip";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGallery } from "@/lib/data";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import type { GalleryDocument, Skill, SortKey, ViewMode } from "@/lib/types";
 
 const CLI_URL = "https://github.com/vercel-labs/skills";
+
+// The dialogs pull in the Markdown renderer and highlight.js, so load them on demand.
+const SkillDetailsDialog = lazy(() =>
+  import("@/components/SkillDetailsDialog").then((module) => ({
+    default: module.SkillDetailsDialog,
+  })),
+);
+const DocumentDialog = lazy(() =>
+  import("@/components/DocumentDialog").then((module) => ({
+    default: module.DocumentDialog,
+  })),
+);
 
 export default function App() {
   const gallery = useGallery();
@@ -127,20 +139,23 @@ export default function App() {
         {gallery.status === "loading" ? <LoadingState /> : null}
 
         {gallery.status === "error" ? (
-          <Card className="border-destructive/40">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
-                The gallery could not load
-              </CardTitle>
-              <CardDescription>{gallery.error}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button type="button" variant="outline" size="sm" onClick={() => window.location.reload()}>
-                Try again
-              </Button>
-            </CardContent>
-          </Card>
+          <Alert variant="destructive" className="items-start">
+            <AlertTriangle aria-hidden="true" />
+            <AlertTitle>The gallery could not load</AlertTitle>
+            <AlertDescription>
+              {gallery.error}
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  Try again
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
         ) : null}
 
         {gallery.status === "ready" && stats ? (
@@ -203,21 +218,24 @@ export default function App() {
         </div>
       </footer>
 
-      <SkillDetailsDialog
-        skill={details}
-        onClose={() => setDetails(null)}
-        onRead={readSkill}
-        onOpenDocument={openDocument}
-      />
-      <DocumentDialog
-        selection={documentSelection}
-        onClose={() => setDocumentSelection(null)}
-        onSelect={(next) =>
-          setDocumentSelection((current) =>
-            current ? { skill: current.skill, document: next } : current,
-          )
-        }
-      />
+      <Suspense fallback={null}>
+        <SkillDetailsDialog
+          key={details?.name ?? "closed"}
+          skill={details}
+          onClose={() => setDetails(null)}
+          onRead={readSkill}
+          onOpenDocument={openDocument}
+        />
+        <DocumentDialog
+          selection={documentSelection}
+          onClose={() => setDocumentSelection(null)}
+          onSelect={(next) =>
+            setDocumentSelection((current) =>
+              current ? { skill: current.skill, document: next } : current,
+            )
+          }
+        />
+      </Suspense>
     </div>
   );
 }

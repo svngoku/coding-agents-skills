@@ -1,7 +1,27 @@
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { GalleryCategory, SortKey, ViewMode } from "@/lib/types";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "name", label: "Sort: name" },
+  { value: "refs", label: "Sort: most guides" },
+  { value: "lines", label: "Sort: most docs" },
+  { value: "category", label: "Sort: category" },
+];
 
 type FilterBarProps = {
   query: string;
@@ -35,73 +55,71 @@ export function FilterBar({
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-sm">
-          <Search
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
+        <InputGroup className="w-full sm:max-w-sm">
+          <InputGroupAddon>
+            <Search aria-hidden="true" />
+          </InputGroupAddon>
+          <InputGroupInput
             type="search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Search skills, capabilities, references…"
             aria-label="Search skills"
-            className="pl-8 pr-8"
           />
           {query ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Clear search"
-              className="absolute top-1/2 right-1 -translate-y-1/2"
-              onClick={() => onQueryChange("")}
-            >
-              <X className="size-3.5" />
-            </Button>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                aria-label="Clear search"
+                onClick={() => onQueryChange("")}
+              >
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
           ) : null}
-        </div>
+        </InputGroup>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label htmlFor="skill-sort" className="sr-only">
-            Sort skills
-          </label>
-          <select
-            id="skill-sort"
+          <Select
+            items={SORT_OPTIONS}
             value={sort}
-            onChange={(event) => onSortChange(event.target.value as SortKey)}
-            className="h-7 rounded-lg border border-input bg-background px-2 text-sm text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            onValueChange={(value) => {
+              if (value) onSortChange(value as SortKey);
+            }}
           >
-            <option value="name">Sort: name</option>
-            <option value="refs">Sort: most guides</option>
-            <option value="lines">Sort: most docs</option>
-            <option value="category">Sort: category</option>
-          </select>
+            <SelectTrigger
+              id="skill-sort"
+              size="sm"
+              aria-label="Sort skills"
+              className="w-full min-w-40 sm:w-auto"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <div
-            role="group"
+          <ToggleGroup
+            value={[view]}
+            onValueChange={(next) => {
+              const [value] = next;
+              if (value) onViewChange(value as ViewMode);
+            }}
             aria-label="Switch between cards and matrix"
-            className="flex items-center gap-0.5 rounded-lg border p-0.5"
+            className="rounded-lg border p-0.5"
           >
-            <Button
-              type="button"
-              size="xs"
-              variant={view === "cards" ? "secondary" : "ghost"}
-              aria-pressed={view === "cards"}
-              onClick={() => onViewChange("cards")}
-            >
+            <ToggleGroupItem value="cards" size="sm" className="px-2.5 text-xs">
               Cards
-            </Button>
-            <Button
-              type="button"
-              size="xs"
-              variant={view === "matrix" ? "secondary" : "ghost"}
-              aria-pressed={view === "matrix"}
-              onClick={() => onViewChange("matrix")}
-            >
+            </ToggleGroupItem>
+            <ToggleGroupItem value="matrix" size="sm" className="px-2.5 text-xs">
               Matrix
-            </Button>
-          </div>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
       </div>
 
@@ -122,7 +140,7 @@ export function FilterBar({
               <span
                 className={
                   isActive
-                    ? "text-xs tabular-nums opacity-80"
+                    ? "text-xs tabular-nums"
                     : "text-xs tabular-nums text-muted-foreground"
                 }
               >

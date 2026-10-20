@@ -743,22 +743,31 @@ the `references/` and `scripts/` folders and every `eval.yaml`, renders the Mark
 writes a single JSON payload. The app never parses Markdown, so the generator stays
 standard-library only and the `--check` gate keeps `site/public/gallery.json` honest.
 
-The UI is assembled from shadcn/ui components (`Card`, `Button`, `Badge`, `Dialog`, `Tabs`,
-`Table`, `Input`, `Skeleton`) and renders:
+The UI is assembled from shadcn/ui components (`Card`, `Button`, `Badge`, `Dialog`, `Select`,
+`ToggleGroup`, `Tooltip`, `ScrollArea`, `Table`, `InputGroup`, `Alert`, `Empty`, `Separator`,
+`Skeleton`) and renders:
 
 - **Cards** — title, category, description, capability tags, guide/line/eval counts and actions.
   Every card has the same anatomy and its footer is pinned to the card bottom, so the "Details"
-  and "Read" actions line up across a row instead of leaving dead space underneath.
-- **Details dialog** — reference guides, scripts and use cases in tabs, with one click to open a
-  document and links to the GitHub source.
+  and "Read" actions line up across a row instead of leaving dead space underneath. Phones keep a
+  single badge row; the extra counts appear from the `sm` breakpoint.
+- **Details dialog** — a segmented `ToggleGroup` switches between guides, scripts and use cases,
+  with full (never truncated) reference titles, status/line/eval counts in the header, one click
+  to open a document and links to the GitHub source.
 - **Document viewer** — `SKILL.md`, every reference guide and example script rendered in a
-  scrollable dialog with a document switcher for jumping between files. highlight.js is bundled
+  `ScrollArea` behind a grouped shadcn `Select` that jumps between files. highlight.js is bundled
   locally (14 languages) and colours fenced code with the gallery palette: amber keywords,
   emerald strings, rose literals, no blue.
 - **Matrix** — artifact coverage per skill (guides, scripts, tasks, graders, rubrics, solutions),
-  available as a card/matrix view switch.
-- **Filters** — free-text search, category chips with `aria-pressed`, sorting by name, guide count,
-  documentation size or category, dark/light theme and `#skill-<name>` deep links.
+  available through the `ToggleGroup` card/matrix view switch.
+- **Filters** — `InputGroup` search with an inline clear button, category chips with `aria-pressed`,
+  shadcn `Select` sorting by name, guide count, documentation size or category, dark/light theme
+  and `#skill-<name>` deep links.
+
+Both dialogs are lazy-loaded, so the Markdown renderer and highlight.js stay out of the initial
+bundle (the app entry stays under 455 kB, the dialogs load on first open). Icon-only controls use
+`Tooltip` and `aria-label`s, and the light theme uses emerald-700 so small primary-coloured text
+clears WCAG AA contrast against white.
 
 The app follows this repo's own [`ui` skill](skills/ui/SKILL.md) and the
 [ui-skills.com](https://www.ui-skills.com/) polish rules: one accent colour (emerald), a neutral

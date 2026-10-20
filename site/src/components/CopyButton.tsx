@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TooltipAction } from "@/components/TooltipAction";
 
 type CopyButtonProps = {
   value: string;
@@ -26,15 +27,17 @@ export function CopyButton({ value, label }: CopyButtonProps) {
 
   return (
     <span className="flex items-center gap-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
-        onClick={copy}
-      >
-        {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
-      </Button>
+      <TooltipAction label={copied ? "Copied" : "Copy command"}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
+          onClick={copy}
+        >
+          {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
+        </Button>
+      </TooltipAction>
       <span className="sr-only" role="status" aria-live="polite">
         {copied ? "Copied to clipboard" : ""}
       </span>

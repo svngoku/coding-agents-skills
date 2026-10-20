@@ -2,6 +2,7 @@ import { ArrowUpRight, Terminal } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "cn";
 
 type InstallCardProps = {
@@ -55,6 +56,7 @@ export function InstallCard({ slug, cliUrl }: InstallCardProps) {
           <ArrowUpRight className="size-3.5" aria-hidden="true" />
         </a>
       </CardHeader>
+      <Separator />
       <CardContent className="grid gap-3 sm:grid-cols-2">
         {commands.map((command) => (
           <div key={command.label} className="min-w-0 rounded-lg border bg-muted/40 p-2.5">

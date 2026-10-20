@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { TooltipAction } from "@/components/TooltipAction";
 import { cn } from "cn";
 import type { Skill } from "@/lib/types";
 
@@ -121,26 +122,28 @@ export function SkillCard({ skill, onDetails, onRead }: SkillCardProps) {
           </Button>
         </div>
         <div className="flex items-center gap-0.5">
-          <a
-            href={skill.skillUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`${skill.title} SKILL.md on GitHub`}
-            title="SKILL.md on GitHub"
-            className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
-          >
-            <FileCode2 className="size-3.5" />
-          </a>
-          <a
-            href={skill.dirUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`${skill.title} directory on GitHub`}
-            title="Skill directory on GitHub"
-            className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
-          >
-            <FolderOpen className="size-3.5" />
-          </a>
+          <TooltipAction label="SKILL.md on GitHub">
+            <a
+              href={skill.skillUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${skill.title} SKILL.md on GitHub`}
+              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
+            >
+              <FileCode2 className="size-3.5" />
+            </a>
+          </TooltipAction>
+          <TooltipAction label="Skill directory on GitHub">
+            <a
+              href={skill.dirUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${skill.title} directory on GitHub`}
+              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
+            >
+              <FolderOpen className="size-3.5" />
+            </a>
+          </TooltipAction>
         </div>
       </CardFooter>
     </Card>
