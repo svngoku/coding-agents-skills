@@ -27,8 +27,9 @@ coding-agents-skills/
 │   └── ...
 ├── docs/eval-guidelines.md    # Eval layout and authoring rules
 ├── scripts/run-evals.sh       # Local eval runner
-├── scripts/build-site.py      # Generates the static skill gallery (site/index.html)
-├── site/index.html            # Generated gallery, published with GitHub Pages
+├── scripts/build-site.py      # Extracts skills/ into site/public/gallery.json
+├── scripts/site_markdown.py   # Stdlib Markdown renderer used by the generator
+├── site/                      # Vite + React + shadcn/ui gallery app (see below)
 ├── README.md                  # REQUIRED — human-facing overview
 ├── AGENTS.md                  # THIS FILE
 └── LICENSE                    # REQUIRED — MIT
@@ -172,10 +173,11 @@ When modifying an existing skill:
    - The skill's capabilities change significantly
    - Reference files are added/removed
    - Status changes (e.g., from In Progress to Complete)
-6. **Rebuild the gallery** — run `python3 scripts/build-site.py` and commit the regenerated
-   `site/index.html`. The Pages workflow fails when the committed page no longer matches `skills/`.
-   The generator also renders each skill's Markdown into the page, so a docs edit shows up in
-   the gallery after a rebuild.
+6. **Rebuild the gallery payload** — run `python3 scripts/build-site.py` and commit the
+   regenerated `site/public/gallery.json`. The Pages workflow fails when that payload no longer
+   matches `skills/`. The generator renders each skill's Markdown to HTML, so a docs edit shows up
+   in the gallery after a rebuild. The React app in `site/` is only rebuilt by the workflow
+   (`npm run build`); it needs no committed output.
 
 ## README Maintenance Rules
 
@@ -238,11 +240,14 @@ When editing files in this repo:
 ## No Build, No CI, No Deploy
 
 This repository has:
-- **No build system** — Markdown is the artifact. The optional gallery generator
-  (`scripts/build-site.py`) is a standalone script, not a build step for the skills
+- **No build step for the skills** — Markdown is the artifact. `scripts/build-site.py` is a
+  standalone extractor, not a build step for the skills
+- **One app build** — the gallery in `site/` is a Vite + React + shadcn/ui app (`npm run build`),
+  built and deployed by the Pages workflow. Its source is committed; `site/dist/` is not
 - **No CI for evals** — Manual commits; evaluations run locally. The only workflow
-  (`.github/workflows/pages.yml`) rebuilds and deploys the gallery
-- **No runtime dependencies** — Graders and the site generator use the Python standard library only
+  (`.github/workflows/pages.yml`) verifies the payload, builds the app and deploys it
+- **No Python runtime dependencies** — Graders, the generator and the Markdown renderer use the
+  standard library only. The gallery app carries its own npm dependencies in `site/package.json`
 - **Evaluations** — Every skill ships a skillgrade harness, run with `./scripts/run-evals.sh`
 
 Treat it as a **documentation codebase**. The structural checks are:

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Build the static skills gallery (site/index.html) from the skills/ directory.
+"""Build the data payload behind the skills gallery (site/public/gallery.json).
 
-The page is a single self-contained HTML file: Tailwind CSS v4 is loaded from
-the CDN at runtime, everything else (markup, data, behaviour) is generated here.
+The gallery UI is a Vite + React + shadcn/ui app in site/. This script is the
+content pipeline: it reads skills/ and README.md, renders every Markdown file
+to HTML, and writes the JSON the app fetches at runtime. Components never parse
+Markdown, so the Python standard library stays the only text-processing tool.
 
 Usage:
-    python3 scripts/build-site.py                # writes site/index.html
-    python3 scripts/build-site.py --output dir   # writes dir/index.html
-    python3 scripts/build-site.py --check        # fail if the page is stale
+    python3 scripts/build-site.py                # writes site/public/gallery.json
+    python3 scripts/build-site.py --output dir   # writes dir/gallery.json
+    python3 scripts/build-site.py --check        # fail if the payload is stale
 
 Standard library only, on purpose: this repo ships no runtime dependencies.
 """
@@ -29,8 +31,8 @@ from site_markdown import render_markdown  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
-TEMPLATE_PATH = Path(__file__).resolve().parent / "site-template.html"
-DEFAULT_OUTPUT = REPO_ROOT / "site"
+DEFAULT_OUTPUT = REPO_ROOT / "site" / "public"
+OUTPUT_NAME = "gallery.json"
 
 # ---------------------------------------------------------------------------
 # Skill taxonomy. Kept here (not in the skills) so the gallery can group skills
@@ -353,7 +355,7 @@ def collect_skill(skill_dir: Path, readme_fields: dict, base_url: str, branch: s
                 "path": script["file"],
                 "label": script["file"],
                 "kind": "script",
-                "html": f'<pre><code class="language-python">{escaped}</code></pre>',
+                "html": f'<pre tabindex="0"><code class="language-python">{escaped}</code></pre>',
                 "lines": script["lines"],
                 "url": script["url"],
             }
@@ -423,301 +425,62 @@ def collect_skills() -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Rendering
+# Payload
 # ---------------------------------------------------------------------------
-def esc(value: str) -> str:
-    return html.escape(value, quote=True)
+def build_stats(skills: list[dict]) -> dict:
+    return {
+        "skills": len(skills),
+        "references": sum(len(s["references"]) for s in skills),
+        "scripts": sum(len(s["scripts"]) for s in skills),
+        "evalTasks": sum(len(s["eval"]["tasks"]) for s in skills),
+        "docsLines": sum(s["docsLines"] for s in skills),
+        "documents": sum(len(s["documents"]) for s in skills),
+    }
 
 
-CARD_CLASS = (
-    "skill-card group flex flex-col rounded-2xl border border-transparent bg-white p-5 shadow-sm "
-    "dark:border-neutral-800 dark:bg-neutral-900/60"
-)
-TRANSITION = (
-    "transition-[color,background-color,border-color,scale] duration-150 ease-out "
-    "motion-reduce:transition-none motion-safe:active:scale-[0.96]"
-)
-
-PILL_CLASS = (
-    "inline-flex items-center rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-medium tabular-nums "
-    "text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-)
-LINK_CLASS = (
-    "font-medium text-emerald-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 "
-    "focus-visible:outline-emerald-500 dark:text-emerald-400"
-)
-SUBHEAD_CLASS = "font-semibold text-neutral-700 dark:text-neutral-200"
-CHEVRON = (
-    '<svg class="size-4 group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" '
-    'stroke-width="1.5" aria-hidden="true">'
-    '<path d="M5 7.5 10 12.5 15 7.5" stroke-linecap="round" stroke-linejoin="round" /></svg>'
-)
-
-
-def render_cards(skills: list[dict]) -> str:
-    out = []
-    for skill in skills:
-        name = esc(skill["name"])
-        capabilities = "".join(
-            '<li class="min-w-0 max-w-full break-words rounded-md border border-neutral-200 px-2 py-1 '
-            f'text-xs text-neutral-600 dark:border-neutral-800 dark:text-neutral-300">{esc(c)}</li>'
-            for c in skill["capabilities"]
-        )
-        references = "".join(
-            '<li class="flex items-baseline gap-2">'
-            f'<button type="button" data-open="{name}" data-path="references/{esc(r["file"])}" '
-            f'title="{esc(r["title"])}" class="truncate text-left {LINK_CLASS}">{esc(r["title"])}</button>'
-            '<span class="shrink-0 text-xs tabular-nums text-neutral-400 dark:text-neutral-500">'
-            f'{r["lines"]} lines</span></li>'
-            for r in skill["references"]
-        )
-        use_cases = "".join(f"<li>{esc(u)}</li>" for u in skill["useCases"])
-        scripts = "".join(
-            f'<li class="min-w-0">'
-            f'<a href="{esc(s["url"])}" class="break-words font-mono text-xs {LINK_CLASS}">'
-            f'{esc(s["file"])}</a></li>'
-            for s in skill["scripts"]
-        )
-        if skill["eval"]["present"]:
-            eval_label = f'eval · {len(skill["eval"]["tasks"])} task(s)'
-        else:
-            eval_label = "no eval harness"
-
-        details = ""
-        if references:
-            details += (
-                f'<div><h3 class="{SUBHEAD_CLASS}">Reference guides</h3>'
-                f'<ul class="mt-1 space-y-1">{references}</ul></div>'
-            )
-        if scripts:
-            details += (
-                f'<div><h3 class="{SUBHEAD_CLASS}">Scripts</h3>'
-                f'<ul class="mt-1 space-y-1">{scripts}</ul></div>'
-            )
-        if use_cases:
-            details += (
-                f'<div><h3 class="{SUBHEAD_CLASS}">Use cases</h3>'
-                '<ul class="mt-1 list-disc space-y-1 pl-4 text-neutral-600 dark:text-neutral-300">'
-                f"{use_cases}</ul></div>"
-            )
-        details += (
-            '<div class="flex flex-wrap gap-3 pt-1">'
-            f'<button type="button" data-open="{name}" class="{LINK_CLASS}">Read the skill</button>'
-            f'<a href="{esc(skill["skillUrl"])}" class="{LINK_CLASS}">SKILL.md on GitHub</a>'
-            f'<a href="{esc(skill["dirUrl"])}" class="{LINK_CLASS}">Skill directory</a>'
-            "</div>"
-        )
-
-        out.append(
-            f"""
-      <article
-        class="{CARD_CLASS}"
-        data-name="{name}"
-        data-title="{esc(skill["title"])}"
-        data-category="{esc(skill["category"])}"
-        data-refs="{len(skill["references"])}"
-        data-lines="{skill["docsLines"]}"
-        data-search="{esc(skill["haystack"])}"
-        id="skill-{name}"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <h2 class="text-lg font-semibold text-balance text-neutral-900 dark:text-neutral-100">
-              <button
-                type="button"
-                data-open="{name}"
-                class="text-left transition-colors hover:text-emerald-700 focus-visible:outline-2
-                       focus-visible:outline-offset-2 focus-visible:outline-emerald-500
-                       dark:hover:text-emerald-400"
-              >
-                {esc(skill["title"])}
-              </button>
-            </h2>
-            <p class="mt-0.5 break-words font-mono text-xs text-neutral-500 dark:text-neutral-400">
-              skills/{name}/SKILL.md
-            </p>
-          </div>
-          <span class="shrink-0 rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium
-                       text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-            {esc(skill["category"])}
-          </span>
-        </div>
-
-        <p class="mt-3 line-clamp-4 text-pretty text-sm leading-6 text-neutral-600 dark:text-neutral-300">
-          {esc(skill["description"])}
-        </p>
-
-        {f'<ul class="mt-4 flex flex-wrap gap-1.5">{capabilities}</ul>' if capabilities else ""}
-
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-          <span class="{PILL_CLASS}">{len(skill["references"])} guides</span>
-          <span class="{PILL_CLASS}">{skill["docsLines"]} lines</span>
-          <span class="{PILL_CLASS}">{esc(skill["status"])}</span>
-          <span class="{PILL_CLASS}">{esc(eval_label)}</span>
-        </div>
-
-        <details class="group mt-4 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-          <summary class="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium
-                          text-emerald-700 hover:underline focus-visible:outline-2
-                          focus-visible:outline-offset-2 focus-visible:outline-emerald-500
-                          dark:text-emerald-400">
-            {CHEVRON}
-            Details &amp; references
-          </summary>
-          <div class="mt-3 space-y-3 text-sm">{details}</div>
-        </details>
-      </article>"""
-        )
-    return "\n".join(out)
-
-
-def render_matrix(skills: list[dict]) -> str:
-    head = "".join(
-        '<th scope="col" class="px-3 py-2 text-left text-xs font-semibold uppercase '
-        f'text-neutral-500 dark:text-neutral-400">{esc(label)}</th>'
-        for _, label in ARTIFACT_KINDS
-    )
-    rows = []
-    for skill in skills:
-        cells = []
-        for kind, _ in ARTIFACT_KINDS:
-            count = skill["artifacts"][kind]
-            if count:
-                cells.append(
-                    '<td class="px-3 py-2 text-center text-xs font-medium tabular-nums text-emerald-700 '
-                    f'dark:text-emerald-400">{count}</td>'
-                )
-            else:
-                cells.append('<td class="px-3 py-2 text-center text-xs text-neutral-300 dark:text-neutral-600">·</td>')
-        link = (
-            f'<a href="#skill-{esc(skill["name"])}" class="{LINK_CLASS}">{esc(skill["title"])}</a>'
-        )
-        rows.append(
-            '<tr class="border-t border-neutral-200 dark:border-neutral-800" '
-            f'data-category="{esc(skill["category"])}" data-search="{esc(skill["haystack"])}">'
-            '<th scope="row" class="px-3 py-2 text-left font-medium">'
-            f"{link}"
-            f'<span class="ml-2 font-mono text-xs text-neutral-400">{esc(skill["name"])}</span></th>'
-            + "".join(cells)
-            + '<td class="px-3 py-2 text-right text-xs tabular-nums text-neutral-500 dark:text-neutral-400">'
-            f'{skill["docsLines"]}</td></tr>'
-        )
-    return f"""
-      <table class="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th scope="col" class="px-3 py-2 text-left text-xs font-semibold uppercase text-neutral-500
-                       dark:text-neutral-400">Skill</th>
-            {head}
-            <th scope="col" class="px-3 py-2 text-right text-xs font-semibold uppercase text-neutral-500
-                       dark:text-neutral-400">Doc lines</th>
-          </tr>
-        </thead>
-        <tbody>
-          {"".join(rows)}
-        </tbody>
-      </table>"""
-
-
-def render_category_chips(skills: list[dict]) -> str:
+def build_categories(skills: list[dict]) -> list[dict]:
     counts: dict[str, int] = {}
     for skill in skills:
         counts[skill["category"]] = counts.get(skill["category"], 0) + 1
-    base = (
-        'category-chip inline-flex min-h-11 items-center gap-1.5 rounded-full '
-        "border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 "
-        + TRANSITION + " hover:border-emerald-600 hover:text-emerald-700 "
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 "
-        "dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:border-emerald-600"
-    )
-    chips = [
-        f'<button type="button" data-category="all" aria-pressed="true" class="{base}">'
-        f'All <span class="text-xs tabular-nums text-neutral-400">{len(skills)}</span></button>'
+    return [
+        {"name": category, "count": counts[category]}
+        for category in CATEGORY_ORDER
+        if counts.get(category)
     ]
-    for category in CATEGORY_ORDER:
-        if category not in counts:
-            continue
-        chips.append(
-            f'<button type="button" data-category="{esc(category)}" aria-pressed="false" class="{base}">'
-            f'{esc(category)} <span class="text-xs tabular-nums text-neutral-400">{counts[category]}</span></button>'
-        )
-    return "\n        ".join(chips)
 
 
-def render_stats(skills: list[dict]) -> str:
-    refs = sum(len(s["references"]) for s in skills)
-    scripts = sum(len(s["scripts"]) for s in skills)
-    tasks = sum(len(s["eval"]["tasks"]) for s in skills)
-    lines = sum(s["docsLines"] for s in skills)
-    stats = [
-        ("Skills", len(skills), "loadable agent skills"),
-        ("Reference guides", refs, "deep-dive documents"),
-        ("Eval tasks", tasks, "skillgrade harnesses"),
-        ("Example scripts", scripts, "runnable helpers"),
-        ("Documentation", f"{lines:,}", "markdown lines"),
-    ]
-    cells = []
-    for label, value, hint in stats:
-        cells.append(
-            """
-        <div class="rounded-2xl border border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800
-                    dark:bg-neutral-900/60">
-          <div class="text-2xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
-            {value}
-          </div>
-          <div class="text-sm font-medium text-neutral-600 dark:text-neutral-300">{label}</div>
-          <div class="text-xs text-neutral-400 dark:text-neutral-500">{hint}</div>
-        </div>""".format(
-                value=esc(str(value)), label=esc(label), hint=esc(hint)
-            )
-        )
-    return "\n".join(cells)
-
-
-def build_page(skills: list[dict], font_url: str, font_css: str) -> str:
-    template = read_text(TEMPLATE_PATH)
-    if not template:
-        raise SystemExit(f"template not found: {TEMPLATE_PATH}")
-
-    replacements = {
-        "{{SKILL_COUNT}}": str(len(skills)),
-        "{{CATEGORY_CHIPS}}": render_category_chips(skills),
-        "{{STATS}}": render_stats(skills),
-        "{{CARDS}}": render_cards(skills),
-        "{{MATRIX}}": render_matrix(skills),
-        "{{REPO_URL}}": repo_url(),
-        "{{REPO_SLUG}}": repo_slug(),
-        "{{BRANCH}}": repo_branch(),
-        "{{FONT_URL}}": font_url,
-        "{{FONT_CSS}}": (
-            f'<link rel="stylesheet" href="{esc(font_css)}" />' if font_css else ""
-        ),
-        "{{DOCS_JSON}}": json.dumps(
-            {skill["name"]: skill["documents"] for skill in skills}, ensure_ascii=False
-        ).replace("</", "<\\/"),
+def build_payload(skills: list[dict]) -> dict:
+    """The single JSON document consumed by the React app."""
+    return {
+        "schemaVersion": 1,
+        "generatedBy": "scripts/build-site.py",
+        "repo": {
+            "url": repo_url(),
+            "slug": repo_slug(),
+            "branch": repo_branch(),
+        },
+        "stats": build_stats(skills),
+        "categories": build_categories(skills),
+        "skills": skills,
     }
-    for key, value in replacements.items():
-        template = template.replace(key, value)
-    return template
+
+
+def serialise(payload: dict) -> str:
+    return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="output directory (default: site/)")
     parser.add_argument(
-        "--font-url",
-        default=os.environ.get("NB_FONT_URL", "fonts"),
-        help=(
-            "directory that serves the licensed NB International Pro woff2 files "
-            "(default: fonts, or the NB_FONT_URL environment variable)"
-        ),
+        "--output",
+        default=str(DEFAULT_OUTPUT),
+        help=f"directory that receives {OUTPUT_NAME} (default: site/public/)",
     )
     parser.add_argument(
-        "--font-css",
-        default=os.environ.get("NB_FONT_CSS", ""),
-        help="URL of a stylesheet that declares the NB International Pro @font-face rules",
+        "--check",
+        action="store_true",
+        help=f"exit non-zero if {OUTPUT_NAME} is stale",
     )
-    parser.add_argument("--check", action="store_true", help="exit non-zero if the generated page is stale")
     args = parser.parse_args()
 
     skills = collect_skills()
@@ -729,22 +492,28 @@ def main() -> int:
             "note: no category mapped for " + ", ".join(unmapped) + " (add them to SKILL_CATEGORY)",
             file=sys.stderr,
         )
-    page = build_page(skills, args.font_url.rstrip("/"), args.font_css.strip())
 
+    payload = build_payload(skills)
+    output = serialise(payload)
     output_dir = Path(args.output).resolve()
-    target = output_dir / "index.html"
+    target = output_dir / OUTPUT_NAME
 
     if args.check:
         current = read_text(target)
-        if current != page:
-            print(f"stale: {target} does not match the generated output", file=sys.stderr)
+        if current != output:
+            print(f"stale: {target} does not match the generated payload", file=sys.stderr)
             return 1
         print(f"ok: {target} is up to date")
         return 0
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    target.write_text(page, encoding="utf-8")
-    print(f"wrote {target} ({len(skills)} skills, {len(page.splitlines())} lines)")
+    target.write_text(output, encoding="utf-8")
+    stats = payload["stats"]
+    print(
+        f"wrote {target} "
+        f"({stats['skills']} skills, {stats['documents']} documents, "
+        f"{len(output) / 1024 / 1024:.1f} MB)"
+    )
     return 0
 
 

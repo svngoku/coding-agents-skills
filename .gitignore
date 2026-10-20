@@ -5,10 +5,17 @@
 __pycache__/
 *.pyc
 
-# Licensed webfonts (NB International Pro) served with the gallery.
-# Aspekta (OFL) is bundled and tracked; keep everything else out.
-site/fonts/*
-!site/fonts/aspekta/
+# Gallery app (Vite)
+site/node_modules/
+site/dist/
+site/.vite/
+*.tsbuildinfo
+
+# Licensed webfonts (NB International Pro). Aspekta (OFL) is bundled and tracked;
+# keep every other font file out of Git.
+site/src/fonts/*
+!site/src/fonts/AspektaVF.woff2
+!site/src/fonts/Aspekta-LICENSE.txt
 
 # OS noise
 .DS_Store

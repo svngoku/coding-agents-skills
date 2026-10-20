@@ -237,14 +237,16 @@ coding-agents-skills/
 │   └── eval-guidelines.md           # skillgrade eval conventions & coverage
 ├── scripts/
 │   ├── run-evals.sh                 # local eval runner (no CI)
-│   ├── build-site.py                # generates the static skill gallery
-│   └── site-template.html           # page template used by the generator
-├── site/
-│   ├── index.html                   # generated gallery (published with GitHub Pages)
-│   └── fonts/aspekta/               # bundled OFL body font + licence
+│   ├── build-site.py                # extracts skills/ into site/public/gallery.json
+│   └── site_markdown.py             # stdlib Markdown renderer used by the generator
+├── site/                            # Vite + React + shadcn/ui gallery app
+│   ├── src/                         # cards, dialogs, filters, theme, fonts
+│   ├── public/gallery.json          # generated payload (committed)
+│   ├── package.json
+│   └── vite.config.ts
 ├── .github/workflows/
-│   └── pages.yml                    # rebuilds and deploys the gallery on push
-└── .gitignore                       # ignores .evals/ output
+│   └── pages.yml                    # builds the app and deploys it to Pages
+└── .gitignore                       # ignores .evals/, node_modules and dist
 ```
 
 Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`: `eval.yaml`, `instructions/`, `graders/`, `rubrics/`, `solutions/`, and optionally `fixtures/`. These are omitted from the tree above for readability; see [Evaluating Skills](#-evaluating-skills) and [docs/eval-guidelines.md](docs/eval-guidelines.md).
@@ -719,68 +721,72 @@ description: >
 
 The collection has a browsable gallery: <https://svngoku.github.io/coding-agents-skills/>
 
-It is a single static page (Tailwind CSS v4 from the CDN, no framework) generated from `skills/`:
+It is a Vite + React + TypeScript app styled with Tailwind CSS v4 and
+[shadcn/ui](https://ui.shadcn.com/) on Base UI primitives, published with GitHub Pages. Python
+remains the content pipeline; the app only renders.
 
 ```bash
-python3 scripts/build-site.py          # writes site/index.html
-python3 scripts/build-site.py --check  # fails if site/index.html is out of date
+# content: reads skills/ and README.md, writes the payload the app fetches
+python3 scripts/build-site.py          # writes site/public/gallery.json
+python3 scripts/build-site.py --check  # fails if that payload is out of date
+
+# app: Vite + React
+cd site
+npm ci
+npm run dev      # local dev server
+npm run build    # static bundle in site/dist
+npm run preview  # serve the built bundle
 ```
 
-The generator reads each `SKILL.md` frontmatter, the per-skill sections of this README, the
-`references/` and `scripts/` folders, and every `eval.yaml`, then renders:
+`scripts/build-site.py` reads each `SKILL.md` frontmatter, the per-skill sections of this README,
+the `references/` and `scripts/` folders and every `eval.yaml`, renders the Markdown to HTML, and
+writes a single JSON payload. The app never parses Markdown, so the generator stays
+standard-library only and the `--check` gate keeps `site/public/gallery.json` honest.
 
-- **Cards** — description, capabilities, reference guides, scripts and eval status per skill
-- **Matrix** — artifact coverage per skill (guides, scripts, tasks, graders, rubrics, solutions)
-- **Filters** — free-text search, category chips, sorting, dark/light theme, `#skill-<name>` deep links
-- **Document viewer** — click a skill to read its `SKILL.md` and every reference guide and
-  example script rendered in the page, with a file switcher and links to the GitHub source.
-  Fenced code is colourised by language with [highlight.js](https://highlightjs.org/), using the
-  gallery's own palette (no blue), and unknown fences fall back to plain text.
+The UI is assembled from shadcn/ui components (`Card`, `Button`, `Badge`, `Dialog`, `Tabs`,
+`Table`, `Input`, `Skeleton`) and renders:
 
-The page follows this repo's own [`ui` skill](skills/ui/SKILL.md) and the
-[ui-skills.com](https://www.ui-skills.com/) polish rules: one accent colour, a neutral (never
-blue) dark palette, `text-balance`/`text-pretty`/`tabular-nums` typography, visible focus rings,
-44px touch targets, 0.96 press feedback and no motion under `prefers-reduced-motion`.
+- **Cards** — title, category, description, capability tags, guide/line/eval counts and actions.
+  Every card has the same anatomy and its footer is pinned to the card bottom, so the "Details"
+  and "Read" actions line up across a row instead of leaving dead space underneath.
+- **Details dialog** — reference guides, scripts and use cases in tabs, with one click to open a
+  document and links to the GitHub source.
+- **Document viewer** — `SKILL.md`, every reference guide and example script rendered in a
+  scrollable dialog with a document switcher for jumping between files. highlight.js is bundled
+  locally (14 languages) and colours fenced code with the gallery palette: amber keywords,
+  emerald strings, rose literals, no blue.
+- **Matrix** — artifact coverage per skill (guides, scripts, tasks, graders, rubrics, solutions),
+  available as a card/matrix view switch.
+- **Filters** — free-text search, category chips with `aria-pressed`, sorting by name, guide count,
+  documentation size or category, dark/light theme and `#skill-<name>` deep links.
 
-It is responsive from 320px up: one card column on phones, two on tablets, three on wide
-screens, with the search field taking a full row on small viewports and the document viewer
-stacking its file list above the content.
-
-If the Tailwind CDN cannot be reached (offline, proxy, extension), a small baseline stylesheet
-takes over so the gallery still renders with the same layout, typography and dark theme instead
-of collapsing into unstyled markup. The page waits about a second for the CDN build before its
-first paint, so it never shows one style and then swaps to another.
+The app follows this repo's own [`ui` skill](skills/ui/SKILL.md) and the
+[ui-skills.com](https://www.ui-skills.com/) polish rules: one accent colour (emerald), a neutral
+(never blue) dark palette, `text-balance`/`text-pretty`/`tabular-nums` typography, visible focus
+rings and `aria-label`s on icon-only buttons. It is responsive from 320px up: one card column on
+phones, two on tablets, three on wide screens, and the dialogs switch to a full-height layout on
+small viewports.
 
 ### Typography
 
 Body copy is set in **Aspekta**, a sans-serif by Ivo Dolenc released under the SIL Open Font
-License 1.1. The variable `woff2` (weights 100–900) is bundled at `site/fonts/aspekta/` next to
-its licence, so the page ships real weights and stays consistent offline.
+License 1.1. The variable `woff2` (weights 100–900) is bundled at
+`site/src/fonts/AspektaVF.woff2` next to its licence (`Aspekta-LICENSE.txt`).
 
 Headings and card titles are set in **NB International Pro**. The typeface is commercial, so the
-licensed `woff2` files are not committed: drop them in `site/fonts/` (git-ignored) or point the
-generator at a CDN that serves them.
+licensed files are not committed: put them under `site/src/fonts/` (git-ignored) and add the
+`@font-face` rule in `site/src/index.css`, or point the build at a stylesheet that serves them.
 
 ```bash
-# expected file names inside site/fonts/
-NBInternationalPro-Variable.woff2   # optional, used for every weight
-NBInternationalPro-Regular.woff2
-NBInternationalPro-Medium.woff2
-NBInternationalPro-SemiBold.woff2
-NBInternationalPro-Bold.woff2
-
-# or serve the files from somewhere else
-NB_FONT_URL=https://cdn.example.com/fonts python3 scripts/build-site.py
-
-# or point at a stylesheet that already declares the @font-face rules
-NB_FONT_CSS=https://cdn.example.com/nb-fonts.css python3 scripts/build-site.py
+VITE_NB_FONT_CSS=https://cdn.example.com/nb-fonts.css npm run build
 ```
 
 Until the licensed files are available, titles fall back to Aspekta, so the page keeps a coherent
 look; if both are missing it falls back to the system sans stack.
 
-`.github/workflows/pages.yml` rebuilds the page on every push to `main` and deploys it to
-GitHub Pages, and fails the build if `site/index.html` no longer matches `skills/`.
+`.github/workflows/pages.yml` verifies the committed payload, rebuilds it, builds the Vite app and
+deploys `site/dist` to GitHub Pages. The build fails when `site/public/gallery.json` no longer
+matches `skills/`.
 
 One-time setup on a fresh fork or clone: enable Pages under **Settings → Pages → Build and
 deployment → Source: GitHub Actions**. The workflow's `configure-pages` step can create the site

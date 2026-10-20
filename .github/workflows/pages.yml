@@ -13,8 +13,7 @@ on:
       - "skills/**"
       - "scripts/build-site.py"
       - "scripts/site_markdown.py"
-      - "scripts/site-template.html"
-      - "site/index.html"
+      - "site/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -29,7 +28,7 @@ concurrency:
 
 jobs:
   verify:
-    # Guards the committed copy: site/index.html must match skills/.
+    # Guards the committed payload: site/public/gallery.json must match skills/.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -38,11 +37,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify the committed gallery matches skills/
+      - name: Verify the committed payload matches skills/
         run: python3 scripts/build-site.py --check
 
   build:
-    # A stale committed page blocks the deployment.
+    # A stale payload blocks the deployment.
     needs: verify
     runs-on: ubuntu-latest
     steps:
@@ -52,8 +51,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Build the gallery
+      - name: Regenerate the gallery payload
         run: python3 scripts/build-site.py
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Build the gallery app
+        working-directory: site
+        run: npm run build
 
       - uses: actions/configure-pages@v6
         with:
@@ -62,7 +75,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: site
+          path: site/dist
 
   deploy:
     needs: build
