@@ -743,38 +743,43 @@ the `references/` and `scripts/` folders and every `eval.yaml`, renders the Mark
 writes a single JSON payload. The app never parses Markdown, so the generator stays
 standard-library only and the `--check` gate keeps `site/public/gallery.json` honest.
 
-The UI is assembled from shadcn/ui components (`Card`, `Button`, `Badge`, `Dialog`, `Select`,
-`ToggleGroup`, `Tooltip`, `ScrollArea`, `Table`, `InputGroup`, `Alert`, `Empty`, `Separator`,
-`Skeleton`) and renders:
+The gallery is a library workbench, assembled from shadcn/ui components (`Card`, `Button`,
+`Badge`, `Dialog`, `Select`, `ToggleGroup`, `Tooltip`, `ScrollArea`, `Table`, `InputGroup`,
+`Alert`, `Empty`, `Separator`, `Skeleton`):
 
-- **Cards** — title, category, description, capability tags, guide/line/eval counts and actions.
-  Every card has the same anatomy and its footer is pinned to the card bottom, so the "Details"
-  and "Read" actions line up across a row instead of leaving dead space underneath. Phones keep a
-  single badge row; the extra counts appear from the `sm` breakpoint.
-- **Details dialog** — a segmented `ToggleGroup` switches between guides, scripts and use cases,
-  with full (never truncated) reference titles, status/line/eval counts in the header, one click
-  to open a document and links to the GitHub source.
-- **Document viewer** — `SKILL.md`, every reference guide and example script rendered in a
-  `ScrollArea` behind a grouped shadcn `Select` that jumps between files. highlight.js is bundled
-  locally (14 languages) and colours fenced code with the gallery palette: amber keywords,
-  emerald strings, rose literals, no blue.
-- **Matrix** — artifact coverage per skill (guides, scripts, tasks, graders, rubrics, solutions),
-  available through the `ToggleGroup` card/matrix view switch.
-- **Filters** — `InputGroup` search with an inline clear button, category chips with `aria-pressed`,
-  shadcn `Select` sorting by name, guide count, documentation size or category, dark/light theme
-  and `#skill-<name>` deep links.
+- **Installation panel** — choose one skill, the whole collection, or updates with a `ToggleGroup`.
+  Select Claude Code, Codex, OpenCode or Cursor and a skill with shadcn `Select`; the copyable
+  terminal command updates immediately. Updates support all installed skills or one named skill.
+- **Topic navigation** — a desktop topic rail with counts becomes a shadcn `Select` on smaller
+  screens, rather than filling the page with category chips.
+- **Cards** — topic icon, full title, description, two capability previews, guide/line counts,
+  and direct reading/source actions. Footers align within each grid row. The complete capability
+  list is available in the details dialog.
+- **Details dialog** — full reference titles, scripts and an Overview with all capabilities and
+  use cases. It opens on guides when available, otherwise scripts or Overview, so skills without
+  references do not start on an empty panel. Status, documentation size and eval counts remain
+  available. The dialog sizes to its contents up to the viewport limit. Its header and action
+  footer stay pinned outside the scrolling body, so they never cover keyboard focus.
+- **Document reader** — a desktop file navigator and grouped shadcn `Select` switch between
+  `SKILL.md`, reference guides and example scripts. Each document opens at the top of its own
+  `ScrollArea`, with a back-to-details action and source link. highlight.js is bundled locally
+  (14 languages): amber keywords, emerald strings and rose literals, with no blue.
+- **Matrix** — compare artifact coverage (guides, scripts, tasks, graders, rubrics, solutions).
+  Skill names open the details dialog directly; wide tables scroll within the workbench.
+- **Filters and states** — `InputGroup` search with an inline clear button, a filter reset,
+  shadcn `Select` sorting, card/matrix `ToggleGroup`, loading skeletons, actionable empty/error
+  states, dark/light themes and `#skill-<name>` deep links.
 
-Both dialogs are lazy-loaded, so the Markdown renderer and highlight.js stay out of the initial
-bundle (the app entry stays under 455 kB, the dialogs load on first open). Icon-only controls use
-`Tooltip` and `aria-label`s, and the light theme uses emerald-700 so small primary-coloured text
-clears WCAG AA contrast against white.
+The dialogs load on their first use, keeping the Markdown renderer and highlight.js out of
+the initial bundle. The design preserves Aspekta and the NB International Pro heading setup,
+with near-white/graphite surfaces and one restrained forest-green accent (soft sage in dark
+mode). Icon-only actions have accessible names, keyboard focus stays visible, and reduced
+motion preferences disable smooth scrolling and transitions.
 
 The app follows this repo's own [`ui` skill](skills/ui/SKILL.md) and the
-[ui-skills.com](https://www.ui-skills.com/) polish rules: one accent colour (emerald), a neutral
-(never blue) dark palette, `text-balance`/`text-pretty`/`tabular-nums` typography, visible focus
-rings and `aria-label`s on icon-only buttons. It is responsive from 320px up: one card column on
-phones, two on tablets, three on wide screens, and the dialogs switch to a full-height layout on
-small viewports.
+[ui-skills.com](https://www.ui-skills.com/) polish rules. It is responsive from 320px up:
+one card column on phones, two on tablets, three on wide screens. The reader fits the viewport;
+long reference titles wrap, while code and tables scroll within their containers.
 
 ### Typography
 

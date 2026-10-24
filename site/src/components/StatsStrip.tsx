@@ -8,22 +8,21 @@ const number = new Intl.NumberFormat("en-US");
 
 export function StatsStrip({ stats }: StatsStripProps) {
   const items = [
-    { label: "Skills", value: number.format(stats.skills), hint: "loadable agent skills" },
-    { label: "Reference guides", value: number.format(stats.references), hint: "deep-dive documents" },
-    { label: "Eval tasks", value: number.format(stats.evalTasks), hint: "skillgrade harnesses" },
-    { label: "Example scripts", value: number.format(stats.scripts), hint: "runnable helpers" },
-    { label: "Documentation", value: number.format(stats.docsLines), hint: "markdown lines" },
+    { label: "Agent skills", value: number.format(stats.skills) },
+    { label: "Reference guides", value: number.format(stats.references) },
+    { label: "Eval tasks", value: number.format(stats.evalTasks) },
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3 lg:grid-cols-5">
+    <dl className="grid grid-cols-3 gap-4 border-t pt-4">
       {items.map((item) => (
-        <div key={item.label} className="bg-card px-4 py-3">
-          <dt className="text-xs font-medium text-muted-foreground">{item.label}</dt>
-          <dd className="mt-0.5 text-2xl font-semibold tabular-nums text-card-foreground">
+        <div key={item.label} className="flex flex-col gap-1">
+          <dt className="order-2 text-xs text-muted-foreground">
+            {item.label}
+          </dt>
+          <dd className="font-heading text-[1.4rem] leading-tight font-medium tracking-tight tabular-nums">
             {item.value}
           </dd>
-          <dd className="text-xs text-muted-foreground">{item.hint}</dd>
         </div>
       ))}
     </dl>

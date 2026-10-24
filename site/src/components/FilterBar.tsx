@@ -1,4 +1,11 @@
-import { Search, X } from "lucide-react";
+import {
+  ArrowDownWideNarrow,
+  LayoutGrid,
+  Search,
+  Table2,
+  X,
+} from "lucide-react";
+import { CategoryNav } from "@/components/CategoryNav";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -17,10 +24,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { GalleryCategory, SortKey, ViewMode } from "@/lib/types";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "name", label: "Sort: name" },
-  { value: "refs", label: "Sort: most guides" },
-  { value: "lines", label: "Sort: most docs" },
-  { value: "category", label: "Sort: category" },
+  { value: "name", label: "Name, A to Z" },
+  { value: "refs", label: "Most guides" },
+  { value: "lines", label: "Most documentation" },
+  { value: "category", label: "Category" },
 ];
 
 type FilterBarProps = {
@@ -35,6 +42,7 @@ type FilterBarProps = {
   onViewChange: (value: ViewMode) => void;
   total: number;
   visible: number;
+  onReset: () => void;
 };
 
 export function FilterBar({
@@ -49,13 +57,12 @@ export function FilterBar({
   onViewChange,
   total,
   visible,
+  onReset,
 }: FilterBarProps) {
-  const filters = [{ name: "All", count: total }, ...categories];
-
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <InputGroup className="w-full sm:max-w-sm">
+    <div className="mb-5 space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <InputGroup className="h-11 w-full bg-card sm:min-w-48 sm:flex-1">
           <InputGroupAddon>
             <Search aria-hidden="true" />
           </InputGroupAddon>
@@ -63,8 +70,9 @@ export function FilterBar({
             type="search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search skills, capabilities, references…"
+            placeholder="Search skills, topics, or tools…"
             aria-label="Search skills"
+            className="h-full text-base sm:text-sm [&::-webkit-search-cancel-button]:appearance-none"
           />
           {query ? (
             <InputGroupAddon align="inline-end">
@@ -79,7 +87,7 @@ export function FilterBar({
           ) : null}
         </InputGroup>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <Select
             items={SORT_OPTIONS}
             value={sort}
@@ -89,10 +97,13 @@ export function FilterBar({
           >
             <SelectTrigger
               id="skill-sort"
-              size="sm"
               aria-label="Sort skills"
-              className="w-full min-w-40 sm:w-auto"
+              className="min-w-0 flex-1 bg-card data-[size=default]:h-11 sm:w-44 sm:flex-none"
             >
+              <ArrowDownWideNarrow
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="start">
@@ -111,47 +122,67 @@ export function FilterBar({
               if (value) onViewChange(value as ViewMode);
             }}
             aria-label="Switch between cards and matrix"
-            className="rounded-lg border p-0.5"
+            className="h-11 shrink-0 gap-0.5 rounded-lg border bg-card p-1"
           >
-            <ToggleGroupItem value="cards" size="sm" className="px-2.5 text-xs">
-              Cards
+            <ToggleGroupItem
+              value="cards"
+              size="sm"
+              aria-label="Card view"
+              className="gap-1.5 rounded-md px-2.5 text-xs aria-pressed:bg-muted"
+            >
+              <LayoutGrid className="size-3.5" aria-hidden="true" />
+              <span className="hidden xl:inline">Cards</span>
             </ToggleGroupItem>
-            <ToggleGroupItem value="matrix" size="sm" className="px-2.5 text-xs">
-              Matrix
+            <ToggleGroupItem
+              value="matrix"
+              size="sm"
+              aria-label="Matrix view"
+              className="gap-1.5 rounded-md px-2.5 text-xs aria-pressed:bg-muted"
+            >
+              <Table2 className="size-3.5" aria-hidden="true" />
+              <span className="hidden xl:inline">Matrix</span>
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by category">
-        {filters.map((item) => {
-          const isActive = item.name === "All" ? category === null : category === item.name;
-          return (
-            <Button
-              key={item.name}
-              type="button"
-              size="sm"
-              variant={isActive ? "default" : "outline"}
-              aria-pressed={isActive}
-              className="gap-1.5 rounded-full"
-              onClick={() => onCategoryChange(item.name === "All" ? null : item.name)}
-            >
-              {item.name}
-              <span
-                className={
-                  isActive
-                    ? "text-xs tabular-nums"
-                    : "text-xs tabular-nums text-muted-foreground"
-                }
-              >
-                {item.count}
-              </span>
-            </Button>
-          );
-        })}
-        <p className="ml-auto text-sm text-muted-foreground" role="status" aria-live="polite">
-          {visible === total ? `${total} skills` : `${visible} of ${total} skills`}
+      <div className="lg:hidden">
+        <CategoryNav
+          compact
+          categories={categories}
+          category={category}
+          onChange={onCategoryChange}
+          total={total}
+        />
+      </div>
+
+      <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
+        <p
+          className="text-xs text-muted-foreground"
+          role="status"
+          aria-live="polite"
+        >
+          {visible === total
+            ? `Showing all ${total} skills`
+            : `Showing ${visible} of ${total} skills`}
+          {category ? ` in ${category}` : ""}
         </p>
+        {query || category ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onClick={onReset}
+            className="text-muted-foreground"
+          >
+            <X className="size-3" aria-hidden="true" />
+            Reset filters
+          </Button>
+        ) : (
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            Read first. Install what you need.
+          </span>
+        )}
       </div>
     </div>
   );

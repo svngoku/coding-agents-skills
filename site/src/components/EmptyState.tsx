@@ -15,14 +15,16 @@ type EmptyStateProps = {
 
 export function EmptyState({ onReset }: EmptyStateProps) {
   return (
-    <Empty className="border bg-card">
+    <Empty className="min-h-80 rounded-2xl border border-dashed bg-card p-8">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <SearchX aria-hidden="true" />
         </EmptyMedia>
-        <EmptyTitle className="text-base font-semibold">No skills match those filters</EmptyTitle>
+        <EmptyTitle className="text-base font-semibold">
+          No skills match those filters
+        </EmptyTitle>
         <EmptyDescription className="text-pretty">
-          Try a different term, or clear the category filter to see all fifteen skills.
+          Try another search, or reset the filters to browse the full library.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
