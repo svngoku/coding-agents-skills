@@ -51,7 +51,6 @@ const ALIASES: Record<string, string> = {
   toml: "ini",
   text: "plaintext",
   txt: "plaintext",
-  mermaid: "plaintext",
   prisma: "plaintext",
   plain: "plaintext",
 };
@@ -63,13 +62,15 @@ const ALIASES: Record<string, string> = {
 export function highlightWithin(root: HTMLElement): void {
   const blocks = root.querySelectorAll<HTMLElement>("pre code");
   blocks.forEach((block) => {
+    if (block.classList.contains("language-mermaid")) return;
     if (block.dataset.highlighted === "yes") return;
 
     const declared = Array.from(block.classList)
       .find((className) => className.startsWith("language-"))
       ?.slice("language-".length);
     const language = declared ? (ALIASES[declared] ?? declared) : "";
-    const resolved = language && hljs.getLanguage(language) ? language : "plaintext";
+    const resolved =
+      language && hljs.getLanguage(language) ? language : "plaintext";
 
     if (declared) block.classList.remove(`language-${declared}`);
     block.classList.add(`language-${resolved}`);

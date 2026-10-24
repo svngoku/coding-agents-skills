@@ -266,6 +266,61 @@
   @apply border-border;
 }
 
+.mermaid-diagram {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+}
+.md .mermaid-status {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.mermaid-viewport {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 1.25rem;
+}
+.mermaid-viewport:focus-visible {
+  outline-offset: -3px;
+}
+.mermaid-canvas {
+  width: max-content;
+  min-width: 100%;
+}
+.mermaid-canvas svg {
+  display: block;
+  margin-inline: auto;
+}
+.mermaid-source {
+  border-top: 1px solid var(--border);
+}
+.mermaid-source summary {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.mermaid-source summary:focus-visible {
+  outline-offset: -3px;
+}
+.md .mermaid-source pre {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+.mermaid-staging {
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  width: 1024px;
+  pointer-events: none;
+}
+
 /* highlight.js tokens, coloured with the gallery palette: amber keywords,
    emerald strings, rose literals, neutral structure. No blue. */
 .hljs-comment,

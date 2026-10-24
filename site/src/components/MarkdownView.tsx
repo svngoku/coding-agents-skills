@@ -1,18 +1,22 @@
 import { useEffect, useRef } from "react";
 import { cn } from "cn";
 import { highlightWithin } from "@/lib/highlight";
+import { renderMermaidWithin } from "@/lib/mermaid";
 
 type MarkdownViewProps = {
   html: string;
   className?: string;
 };
 
-/** Renders pre-generated Markdown HTML and colourises its code blocks once. */
+/** Enhances pre-generated Markdown with highlighted code and Mermaid diagrams. */
 export function MarkdownView({ html, className }: MarkdownViewProps) {
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (container.current) highlightWithin(container.current);
+    const root = container.current;
+    if (!root) return;
+    highlightWithin(root);
+    return renderMermaidWithin(root);
   }, [html]);
 
   return (

@@ -764,6 +764,11 @@ The gallery is a library workbench, assembled from shadcn/ui components (`Card`,
   `SKILL.md`, reference guides and example scripts. Each document opens at the top of its own
   `ScrollArea`, with a back-to-details action and source link. highlight.js is bundled locally
   (14 languages): amber keywords, emerald strings and rose literals, with no blue.
+  Mermaid fences render as SVG diagrams using the gallery fonts and light/dark palette.
+  Wide diagrams scroll horizontally at readable size, and every diagram retains a
+  keyboard-accessible source disclosure. Invalid diagrams show their original source
+  instead of interrupting the reader. Mermaid loads only for documents containing diagrams,
+  with strict security and application-owned rendering settings.
 - **Matrix** — compare artifact coverage (guides, scripts, tasks, graders, rubrics, solutions).
   Skill names open the details dialog directly; wide tables scroll within the workbench.
 - **Filters and states** — `InputGroup` search with an inline clear button, a filter reset,
