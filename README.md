@@ -785,9 +785,12 @@ The gallery is a library workbench, assembled from shadcn/ui components (`Card`,
   terminal command updates immediately. Updates support all installed skills or one named skill.
 - **Topic navigation** — a desktop topic rail with counts becomes a shadcn `Select` on smaller
   screens, rather than filling the page with category chips.
-- **Cards** — topic icon, full title, description, two capability previews, guide/line counts,
-  and direct reading/source actions. Footers align within each grid row. The complete capability
-  list is available in the details dialog.
+- **Cards** — official library marks where available (topic icons otherwise), full title,
+  description, two capability previews, guide/line counts, and direct reading/source actions.
+  Marks are bundled locally, with source attribution in
+  [`site/src/assets/brands/README.md`](site/src/assets/brands/README.md); failed images fall back
+  to the topic icon. Footers align within each grid row. The complete capability list is
+  available in the details dialog, which uses the same library mark.
 - **Details dialog** — full reference titles, scripts and an Overview with all capabilities and
   use cases. It opens on guides when available, otherwise scripts or Overview, so skills without
   references do not start on an empty panel. Status, documentation size and eval counts remain

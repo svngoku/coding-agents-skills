@@ -16,8 +16,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { TooltipAction } from "@/components/TooltipAction";
+import { SkillIcon } from "@/components/SkillIcon";
 import { cn } from "cn";
-import { getCategoryIcon } from "@/lib/categories";
 import type { Skill } from "@/lib/types";
 
 type SkillCardProps = {
@@ -29,8 +29,6 @@ type SkillCardProps = {
 const number = new Intl.NumberFormat("en-US");
 
 export function SkillCard({ skill, onDetails, onRead }: SkillCardProps) {
-  const Icon = getCategoryIcon(skill.category);
-
   return (
     <Card
       id={`skill-${skill.name}`}
@@ -39,9 +37,7 @@ export function SkillCard({ skill, onDetails, onRead }: SkillCardProps) {
       <CardHeader className="gap-4 p-5 pb-3">
         <div className="flex min-h-8 items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-              <Icon className="size-4" aria-hidden="true" />
-            </span>
+            <SkillIcon skill={skill} />
             <span>{skill.category}</span>
           </div>
           <TooltipAction label="Skill directory on GitHub">

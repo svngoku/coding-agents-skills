@@ -27,9 +27,9 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { TooltipAction } from "@/components/TooltipAction";
+import { SkillIcon } from "@/components/SkillIcon";
 import { cn } from "cn";
 import type { GalleryDocument, Skill } from "@/lib/types";
-import { getCategoryIcon } from "@/lib/categories";
 
 type SkillDetailsDialogProps = {
   skill: Skill | null;
@@ -60,8 +60,6 @@ export function SkillDetailsDialog({
         { id: "overview", label: "Overview" },
       ]
     : [];
-  const Icon = getCategoryIcon(skill?.category ?? "");
-
   return (
     <Dialog
       open={skill !== null}
@@ -74,7 +72,7 @@ export function SkillDetailsDialog({
         >
           <DialogHeader className="gap-2 border-b bg-popover p-5 pr-12 sm:p-6 sm:pr-12">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Icon className="size-4 shrink-0" aria-hidden="true" />
+              <SkillIcon skill={skill} />
               <span>{skill.category}</span>
             </div>
             <DialogTitle className="text-xl leading-snug font-medium tracking-tight sm:text-2xl">
