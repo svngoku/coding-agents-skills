@@ -1,0 +1,34 @@
+{
+  "model": "jev-1.14.0",
+  "state": {
+    "message": "I was charged twice yesterday. Please refund the duplicate charge."
+  },
+  "questions": {
+    "team": {
+      "type": "choice",
+      "instructions": "Which support team should handle `message`?",
+      "criteria": {
+        "billing": "Payment, charge, invoice, or refund issues.",
+        "technical": "Application failures or technical troubleshooting.",
+        "other": "Neither billing nor technical support is appropriate."
+      }
+    },
+    "billing": {
+      "type": "noul",
+      "instructions": "Does `message` describe a payment or billing issue?",
+      "criteria": {
+        "true": "A payment, charge, invoice, or refund issue is described.",
+        "false": "No payment or billing issue is described."
+      }
+    },
+    "urgency": {
+      "type": "score",
+      "instructions": "Rate the urgency described in `message`; higher levels mean greater urgency.",
+      "criteria": [
+        "Routine request with no time-sensitive consequence.",
+        "Time-sensitive issue with limited impact.",
+        "Urgent issue with immediate severe impact."
+      ]
+    }
+  }
+}

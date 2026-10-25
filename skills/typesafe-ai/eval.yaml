@@ -1,0 +1,20 @@
+# Hermetic request-design task. Reference validation does not call Jev.
+version: "1"
+defaults:
+  agent: command
+  command: opencode run
+  provider: local
+  trials: 5
+  timeout: 300
+  threshold: 0.8
+tasks:
+  - name: support-triage
+    instruction: instructions/support-triage.md
+    solution: solutions/reference-support-triage
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md
+        weight: 0.3

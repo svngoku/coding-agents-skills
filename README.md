@@ -10,7 +10,7 @@ This repository provides production-ready skill modules for AI coding agents, en
 - Write and maintain automated tests across the full test pyramid
 - Harden applications against OWASP-class vulnerabilities
 - Find and fix performance problems by measuring first
-- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk)
+- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk, TypeSafe/Jev)
 - Post-train and fine-tune LLMs (prime-rl, Unsloth)
 - Deploy and operate applications on cloud platforms (Scalingo)
 - Follow best practices in code generation, refactoring, and UI development
@@ -49,7 +49,7 @@ npx skills add https://github.com/svngoku/coding-agents-skills/tree/main/skills/
 ### Install every skill
 
 ```bash
-# All 15 skills, for one agent
+# All 16 skills, for one agent
 npx skills add svngoku/coding-agents-skills --skill '*' -a claude-code
 
 # All skills, for every agent the CLI can install to, without prompts
@@ -219,6 +219,15 @@ coding-agents-skills/
 │   │       ├── flaky-tests-ci.md
 │   │       ├── js-ts-testing.md
 │   │       └── python-testing.md
+│   │
+│   ├── typesafe-ai/                    # TypeSafe Jev structured judgments
+│   │   ├── SKILL.md
+│   │   ├── LICENSE
+│   │   ├── references/                # 7 guides, including the official source ledger
+│   │   ├── examples/                  # Synthetic requests, mock response, edge cases
+│   │   ├── scripts/
+│   │   │   └── validate_examples.py
+│   │   └── tests/                     # Offline checker and grader regression tests
 │   │
 │   ├── ui/                             # UI/UX best practices for agent-built interfaces
 │   │   └── SKILL.md
@@ -600,6 +609,30 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
+### 16. TypeSafe AI — Jev Structured Judgments
+**Status:** ✅ Complete
+
+**Description:** Design, integrate, and evaluate typed semantic judgments with TypeSafe's Jev models, keeping exact logic, authorization, and actions in code.
+
+**Capabilities:**
+- Choice, Noul, and Score question design, confidence interpretation, and decision policies
+- HTTP, Python, JavaScript, and schema-discovered MCP interface distinctions
+- Routing, extraction, ranking, verification, and all 20 indexed cookbook patterns
+- Experimental images and Box requirements, limits, and explicit opt-in
+- Safe retries, privacy boundaries, model/version drift, and evidence-based review
+- Synthetic examples, an offline validator with unit tests, and a skillgrade harness
+- Dated research ledger covering 131 official documentation and API URLs
+
+**Use Cases:**
+- Building bounded semantic decisions without generating free-form prose
+- Integrating Jev through an existing API, SDK, or available MCP tool
+- Evaluating abstention policies and reviewing artifacts with independent evidence
+- Troubleshooting interface mismatches, uncertain judgments, or experimental image workflows
+
+**Reference Files:** 7 guides
+
+---
+
 ## 🚀 Usage
 
 ### For AI Coding Agents
@@ -836,6 +869,7 @@ Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#rea
 | ui | ✅ `eval.yaml` | ready |
 | scalingo | ✅ `eval.yaml` | ready |
 | prime-rl | ✅ `eval.yaml` | ready |
+| typesafe-ai | ✅ `eval.yaml` | ready |
 
 ### Running locally (no CI)
 
@@ -888,6 +922,7 @@ Contributions are welcome! To add a new skill:
 - [x] Security best practices skill
 - [x] Performance optimization skill
 - [x] prime-rl post-training skill
+- [x] TypeSafe AI / Jev structured judgments skill
 - [ ] MCP server authoring skill
 - [ ] RAG patterns skill (retrieval architecture deep dive)
 - [ ] LLM evaluation & observability skill (Langfuse, evals)

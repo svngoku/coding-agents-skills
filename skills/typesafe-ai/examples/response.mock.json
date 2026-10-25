@@ -1,0 +1,38 @@
+{
+  "model": "jev-1.14.0",
+  "answers": {
+    "team": {
+      "type": "choice",
+      "choice": "billing",
+      "confidence": 0.955,
+      "probabilities": {
+        "billing": 0.97,
+        "technical": 0.02,
+        "other": 0.01
+      }
+    },
+    "billing": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "urgency": {
+      "type": "score",
+      "score": 0.22,
+      "confidence": 0.67,
+      "legend": {
+        "0": "Routine request with no time-sensitive consequence.",
+        "1": "Time-sensitive issue with limited impact.",
+        "2": "Urgent issue with immediate severe impact."
+      },
+      "probabilities": {
+        "0": 0.8,
+        "1": 0.18,
+        "2": 0.02
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 120,
+    "output_tokens": 36
+  }
+}

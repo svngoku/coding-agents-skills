@@ -65,6 +65,7 @@ SKILL_CATEGORY = {
     "security-best-practices": "Security",
     "smolagents": "AI & Agents",
     "testing-patterns": "Testing & Quality",
+    "typesafe-ai": "AI & Agents",
     "ui": "UI & Frontend",
     "unsloth-hf-jobs": "Post-Training & ML",
 }

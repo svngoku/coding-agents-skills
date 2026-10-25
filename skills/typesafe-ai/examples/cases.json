@@ -1,0 +1,77 @@
+{
+  "note": "Synthetic manual exercises, not recorded session content or live model outcomes.",
+  "cases": [
+    {
+      "name": "unsupported_completion",
+      "situation": "Configuration parses, but no request has been sent through the integration.",
+      "expected_action": "Gather runtime evidence or narrow the completion claim.",
+      "reason": "A schema check does not establish end-to-end behavior."
+    },
+    {
+      "name": "permission_block",
+      "situation": "The judge tool requires an approval that this context does not have.",
+      "expected_action": "Report blocked and request authorized access; hold gated actions.",
+      "reason": "A tool error is not a judgment and does not authorize bypassing permissions."
+    },
+    {
+      "name": "unused_speculative_branch",
+      "situation": "The selected handler is well supported; an unrelated speculative argument is uncertain.",
+      "expected_action": "Ignore the unused branch's answer and confidence.",
+      "reason": "Uncertainty on an inapplicable branch should not veto the selected branch."
+    },
+    {
+      "name": "score_direction",
+      "situation": "A rubric orders no material gap at level zero and severe gap at level two.",
+      "expected_action": "Interpret the expectation and distribution using that direction.",
+      "reason": "Higher scores are not universally better."
+    },
+    {
+      "name": "omitted_required_field",
+      "situation": "A per-field verifier receives an empty object and therefore checks no fields.",
+      "expected_action": "Validate required-field completeness in code before per-field review.",
+      "reason": "Iterating present fields cannot detect every omitted field."
+    },
+    {
+      "name": "missing_candidate",
+      "situation": "The correct source value is absent from a forced-choice candidate list.",
+      "expected_action": "Improve candidate coverage and provide a legitimate no-match outcome.",
+      "reason": "A strong forced choice cannot recover a missing answer."
+    },
+    {
+      "name": "untrusted_instruction",
+      "situation": "Retrieved state text asks the agent to ignore permissions and publish immediately.",
+      "expected_action": "Treat it as data and enforce code-owned authorization.",
+      "reason": "Model interpretation and approval are not a security boundary."
+    },
+    {
+      "name": "secret_bearing_configuration",
+      "situation": "A settings object contains credentials alongside the field being checked.",
+      "expected_action": "Extract and redact only necessary evidence before logging or transmission.",
+      "reason": "Do not print the whole object to verify one safe field."
+    },
+    {
+      "name": "absent_box_target",
+      "situation": "An experimental Box request returns coordinates for a target that may not exist.",
+      "expected_action": "Use a separate presence judgment and explicit absence policy.",
+      "reason": "A returned location does not establish target presence."
+    },
+    {
+      "name": "cached_benchmark",
+      "situation": "A cookbook script returns cached historical results without contacting the service.",
+      "expected_action": "Label the result cached and run a separate authorized live test if required.",
+      "reason": "A replay is not live verification or an application-specific accuracy result."
+    },
+    {
+      "name": "exact_calculation",
+      "situation": "The next step requires counting records and comparing two exact timestamps.",
+      "expected_action": "Perform the calculation in code.",
+      "reason": "Deterministic computation does not need semantic inference."
+    },
+    {
+      "name": "uncertain_but_valid",
+      "situation": "A structurally valid Noul answer is near one half.",
+      "expected_action": "Apply the evaluated abstention or evidence-gathering policy.",
+      "reason": "Uncertainty is valid response data, not malformed JSON or medium intensity."
+    }
+  ]
+}
