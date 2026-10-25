@@ -1,0 +1,20 @@
+# Offline Clairic artifact evaluation; no Clairic inference is performed.
+version: "1"
+defaults:
+  agent: command
+  command: opencode run
+  provider: local
+  trials: 5
+  timeout: 300
+  threshold: 0.8
+tasks:
+  - name: invoice-extraction
+    instruction: instructions/invoice-extraction.md
+    solution: solutions/reference-invoice
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md
+        weight: 0.3

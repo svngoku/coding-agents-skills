@@ -1,0 +1,83 @@
+#!/bin/sh
+# Writes reviewable artifacts only. No installation, imports or inference occur.
+set -eu
+cat > invoice.py <<'PYTHON'
+"""Typed invoice extraction; live requests occur only on explicit function calls."""
+
+from __future__ import annotations
+
+from datetime import date
+from math import isfinite
+from typing import Annotated
+
+from clairic import Clairic, DateAnswer, Number, NumberAnswer, Result, TextAnswer
+from pydantic import BaseModel, Field
+
+
+class InvoiceExtraction(BaseModel):
+    invoice_number: TextAnswer
+    total: Annotated[NumberAnswer[float], Number(unit="USD", decimals=2)]
+    due_date: DateAnswer = Field(
+        description="The invoice payment due date; interpret relative dates using reference_date."
+    )
+
+
+def extract_invoice(text: str) -> Result[InvoiceExtraction]:
+    """Live-only: caller must authorize data transmission and metered inference."""
+    with Clairic(timeout=30.0) as client:
+        return client.extract(text, InvoiceExtraction, reference_date=date(2026, 10, 26))
+
+
+def accept_total(result: Result[InvoiceExtraction]) -> float | None:
+    """Synthetic evaluation cutoffs, not a calibrated policy or payment approval."""
+    if result.truncated:
+        return None
+    total = result.data.total
+    value = total.value
+    if value is None:
+        return None
+    if total.p_null >= 0.5 or total.confidence < 0.9:
+        return None
+    if not isfinite(value) or value < 0:
+        return None
+    return value
+PYTHON
+cat > requirements.txt <<'REQUIREMENTS'
+clairic==0.1.0
+REQUIREMENTS
+cat > design.md <<'DESIGN'
+# Invoice Extraction Boundary
+
+`clairic==0.1.0` is an unofficial Python SDK, not a Cloudflare-maintained library.
+It calls Cloudflare's hosted preview model `@cf/cloudflare/clairic`. Its `extract`
+method accepts text and an answer-model class, not images, output options, or streaming.
+
+`p_null` expresses probability of absence. `confidence` concerns correctness conditional
+on a value existing; high confidence on a guess cannot override absence. The pure helper
+rejects truncated, missing, uncertain, negative and non-finite amounts without substituting
+`guess`. Its p_null < 0.5 and confidence >= 0.9 cutoffs are synthetic evaluation thresholds,
+not universal calibrated deployment policy. Real deployments need domain calibration,
+review of uncertain/missing/truncated records, and independently verified business rules.
+
+The uncalled live helper uses the SDK's CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN
+constructor defaults. Keep account-scoped tokens server-side, out of source and logs.
+Only explicitly authorized calls may transmit appropriate invoice data and incur metered
+inference charges. The SDK has no automatic retries; application retries can repeat billing.
+The service may split fields into several passes, each reading the input, affecting
+usage.input_tokens and cost; monitor usage and passes. Preview availability, pricing and
+limits may change. HTTPX's 30-second timeout is not a separately enforced total wall-clock
+deadline. Local development against the remote service is not free offline inference.
+
+A typed extracted total does not prove arithmetic correctness or authorize a payment.
+Ordinary application code must recompute arithmetic from verified operands and enforce
+business rules. Consequential payment needs independent checks and appropriate approval;
+accept_total returning a float is only a review-policy result, not permission to pay.
+
+No live call has been performed by this solution. The hermetic grader checks an intentionally
+narrow supported SDK AST profile and tests only the isolated pure helper with synthetic
+results. It neither imports invoice.py nor installs the SDK. These checks establish source
+structure and tested helper behavior, not model accuracy, confidence calibration, live
+credentials/permissions, quotas, latency, actual token usage or billing. Separately authorized,
+budgeted live evaluation on representative data is needed for those claims. No released
+local weights, universal privacy guarantee or production readiness is asserted.
+DESIGN

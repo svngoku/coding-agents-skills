@@ -123,3 +123,4 @@ when a skill drops below its `threshold`.
 | scalingo | ✅ | code-gen | ready |
 | prime-rl | ✅ | code-gen | ready |
 | typesafe-ai | ✅ | code-gen | ready |
+| clairic | ✅ | code-gen | ready |

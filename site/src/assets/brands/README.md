@@ -2,11 +2,12 @@
 
 These marks identify the libraries and platforms covered by the gallery. They
 are bundled locally, not fetched from third-party logo services at runtime.
-Sources checked on 2026-10-25.
+Sources checked on 2026-10-25; the Cloudflare addition was checked on 2026-10-26.
 
 | File / skill | Mark | Official asset source | Provenance |
 | --- | --- | --- | --- |
 | `adaption-ai.png` | Adaption | [Site favicon](https://adaptionlabs.ai/favicon.ico) | [Adaption](https://adaptionlabs.ai/), [documentation](https://docs.adaptionlabs.ai/) |
+| `clairic.png` | Cloudflare | [Official color icon](https://cf-assets.www.cloudflare.com/slt3lc6tev37/CHOl0sUhrumCxOXfRotGt/081f81d52274080b2d026fdf163e3009/cloudflare-icon-color_3x.png) | [Cloudflare trademark guidelines](https://www.cloudflare.com/trademark/), [official Clairic model](https://developers.cloudflare.com/workers-ai/models/clairic/) |
 | `typesafe-ai.svg` | TypeSafe | [Light-background integration icon](https://raw.githubusercontent.com/typesafe-ai/n8n-nodes-typesafe-ai/main/nodes/TypeSafeAi/typeSafeAi.svg) | [Official TypeSafe integration](https://github.com/typesafe-ai/n8n-nodes-typesafe-ai/blob/main/nodes/TypeSafeAi/TypeSafeAi.node.ts) |
 | `langchain.png` | LangChain | [Official icon](https://raw.githubusercontent.com/langchain-ai/docs/main/src/images/brand/langchain-icon.png) | [Brand guidelines](https://www.langchain.com/brand-assets) |
 | `smolagents.svg` | Hugging Face | [Official color mark](https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg) | [Hugging Face brand assets](https://huggingface.co/brand) |
@@ -17,6 +18,8 @@ Sources checked on 2026-10-25.
 TypeSafe's mark identifies the provider, not a separately verified Jev-specific
 logo. SmolAgents uses the Hugging Face owner mark; prime-rl uses Prime Intellect's
 mark. No distinct genai-tk mark was established, so it keeps its topic icon.
+Clairic uses Cloudflare's service-provider mark, not a logo for the unofficial
+Python SDK or an indication that Cloudflare endorses that SDK.
 
 Original colors, proportions, and supplied tile shapes are preserved. Adaption's
 32px favicon was converted from ICO to PNG. Prime Intellect's 800px PNG was
@@ -31,6 +34,8 @@ used for identification, without implying affiliation or endorsement. The
 repository's MIT license does not grant trademark rights or relicense these
 third-party brand assets. Follow the owners' applicable brand guidelines; no
 blanket reuse permission is asserted here.
+Cloudflare's published guidelines require written permission for logo use; this
+source attribution does not assert that such permission has been granted.
 
 ## Adding or Updating a Mark
 

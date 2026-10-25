@@ -10,7 +10,7 @@ This repository provides production-ready skill modules for AI coding agents, en
 - Write and maintain automated tests across the full test pyramid
 - Harden applications against OWASP-class vulnerabilities
 - Find and fix performance problems by measuring first
-- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk, TypeSafe/Jev)
+- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk, TypeSafe/Jev, Clairic)
 - Post-train and fine-tune LLMs (prime-rl, Unsloth)
 - Deploy and operate applications on cloud platforms (Scalingo)
 - Follow best practices in code generation, refactoring, and UI development
@@ -49,7 +49,7 @@ npx skills add https://github.com/svngoku/coding-agents-skills/tree/main/skills/
 ### Install every skill
 
 ```bash
-# All 16 skills, for one agent
+# All 17 skills, for one agent
 npx skills add svngoku/coding-agents-skills --skill '*' -a claude-code
 
 # All skills, for every agent the CLI can install to, without prompts
@@ -123,6 +123,13 @@ coding-agents-skills/
 │   │       ├── error-handling.md
 │   │       ├── pagination-filtering.md
 │   │       └── versioning-evolution.md
+│   │
+│   ├── clairic/                       # Unofficial Python SDK for Cloudflare Clairic extraction
+│   │   ├── SKILL.md
+│   │   ├── references/                # 4 guides: typed fields, clients, official API, sources
+│   │   ├── scripts/
+│   │   │   └── offline_checks.py
+│   │   └── tests/                     # Hermetic evaluation grader regression tests
 │   │
 │   ├── database-design/                # Relational & NoSQL schema design
 │   │   ├── SKILL.md
@@ -633,6 +640,30 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
+### 17. Clairic — Unofficial Python SDK
+**Status:** ✅ Complete
+
+**Description:** Build typed extraction with the unofficial VianneyMI/clairic Python SDK for Cloudflare Workers AI, keeping SDK behavior distinct from the official service.
+
+**Capabilities:**
+- All nine Clairic field types, Pydantic answer models, annotated specs, and aliases
+- Separate absence probability, conditional confidence, guesses, and prediction intervals
+- Sync/async clients, credential wiring, resource ownership, errors, and truncation handling
+- Typed value export and full-result JSON storage
+- Official REST/Workers binding guidance for images and options absent from SDK 0.1.0
+- Dated preview, billing, limits, and source/compatibility guidance
+- Synthetic offline SDK checks and a hermetic skillgrade harness with grader regressions
+
+**Use Cases:**
+- Extracting invoice/document text into typed Python values with uncertainty metadata
+- Defining bounded estimates and forecasts without treating them as exact calculations
+- Debugging SDK-versus-service differences and testing request/response handling offline
+- Choosing the official API when images, quantiles, or span-reference text are required
+
+**Reference Files:** 4 guides
+
+---
+
 ## 🚀 Usage
 
 ### For AI Coding Agents
@@ -873,6 +904,7 @@ Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#rea
 | scalingo | ✅ `eval.yaml` | ready |
 | prime-rl | ✅ `eval.yaml` | ready |
 | typesafe-ai | ✅ `eval.yaml` | ready |
+| clairic | ✅ `eval.yaml` | ready |
 
 ### Running locally (no CI)
 
@@ -926,6 +958,7 @@ Contributions are welcome! To add a new skill:
 - [x] Performance optimization skill
 - [x] prime-rl post-training skill
 - [x] TypeSafe AI / Jev structured judgments skill
+- [x] Clairic unofficial Python SDK skill
 - [ ] MCP server authoring skill
 - [ ] RAG patterns skill (retrieval architecture deep dive)
 - [ ] LLM evaluation & observability skill (Langfuse, evals)
@@ -942,6 +975,7 @@ Contributions are welcome! To add a new skill:
 - [Unsloth](https://github.com/unslothai/unsloth) - Fast LLM fine-tuning
 - [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) - Asynchronous RL post-training at scale
 - [Adaption](https://docs.adaptionlabs.ai/) - Synthetic data augmentation platform
+- [Clairic Python SDK (unofficial)](https://github.com/VianneyMI/clairic) - Typed extraction for [Cloudflare's Clairic model](https://developers.cloudflare.com/workers-ai/models/clairic/)
 - [OWASP Top 10](https://owasp.org/Top10/) - Web application security risks
 - [Pact](https://pact.io/) - Consumer-driven contract testing
 - [OpenTelemetry](https://opentelemetry.io/) - Distributed tracing and observability

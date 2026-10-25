@@ -54,6 +54,7 @@ CATEGORY_ORDER = [
 SKILL_CATEGORY = {
     "adaption-ai": "AI & Agents",
     "api-design": "Architecture & Design",
+    "clairic": "AI & Agents",
     "database-design": "Data & Storage",
     "ddd": "Architecture & Design",
     "genai-tk": "AI & Agents",
