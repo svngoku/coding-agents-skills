@@ -1761,9 +1761,9 @@
       },
       "artifacts": {
         "references": 7,
-        "scripts": 2,
+        "scripts": 1,
         "instructions": 1,
-        "graders": 2,
+        "graders": 1,
         "rubrics": 1,
         "solutions": 1,
         "fixtures": 0

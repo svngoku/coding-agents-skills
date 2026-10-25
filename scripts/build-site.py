@@ -319,7 +319,10 @@ def collect_skill(skill_dir: Path, readme_fields: dict, base_url: str, branch: s
     artifacts = {}
     for kind, _ in ARTIFACT_KINDS:
         path = skill_dir / kind
-        artifacts[kind] = len(list(path.iterdir())) if path.is_dir() else 0
+        artifacts[kind] = sum(
+            1 for item in path.iterdir()
+            if item.name != "__pycache__" and item.suffix not in {".pyc", ".pyo"}
+        ) if path.is_dir() else 0
 
     documents = [
         {
