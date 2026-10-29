@@ -1,0 +1,59 @@
+#!/bin/sh
+# Trusted offline artifact generator; compatible with skillgrade's bash runner.
+set -eu
+python3 -I -S - <<'LINKUP_REFERENCE_PY'
+"""Write the trusted offline reference artifacts; never call Linkup."""
+
+import json
+from pathlib import Path
+
+PLAN = {'version': 1,
+ 'transport': {'baseUrl': 'https://api.linkup.so',
+               'headers': {'Authorization': 'Bearer ${LINKUP_API_KEY}',
+                           'Content-Type': 'application/json'},
+               'timeoutSeconds': 30},
+ 'submit': {'method': 'POST',
+            'path': '/v1/research',
+            'body': {'q': 'Compare how Microsoft, Amazon and Google describe 2024 cloud revenue '
+                          'growth in primary public earnings reports. Separate disclosed metrics '
+                          'from estimates and retain the source URLs and uncertainty.',
+                     'mode': 'research',
+                     'reasoningDepth': 'M',
+                     'outputType': 'sourcedAnswer'}},
+ 'poll': {'method': 'GET',
+          'path': '/v1/research/${taskId}',
+          'taskIdFrom': 'submit.id',
+          'persistTaskIdBeforePolling': True,
+          'initialDelaySeconds': 2,
+          'backoffMultiplier': 2,
+          'maxDelaySeconds': 10,
+          'maxRequestsPerSecond': 1,
+          'deadlineSeconds': 600,
+          'maxAttempts': 90,
+          'states': {'pending': 'wait',
+                     'processing': 'wait',
+                     'completed': 'read-output',
+                     'failed': 'report-error'},
+          'onTimeout': 'return-task-id',
+          'onCancel': 'return-task-id',
+          'onUnknownStatus': 'stop-and-report',
+          'onAmbiguousSubmit': 'stop-and-reconcile',
+          'resubmitWhileActive': False},
+ 'result': {'answerPath': 'output.answer',
+            'sourcesPath': 'output.sources',
+            'errorPath': 'error',
+            'preserveSources': True},
+ 'policy': {'networkDuringPlanning': False,
+            'credentialSource': 'environment',
+            'maxRetries': 0,
+            'sourcePolicy': 'preserve',
+            'onError': 'stop-and-report',
+            'writeTargets': ['request-plan.json', 'design.md'],
+            'maxSubmissions': 1,
+            'missingValuePolicy': 'report-unknown'}}
+
+DESIGN = '# Research Task Boundary\n\nResearch is asynchronous. POST returns an envelope with id and typically pending status,\nnot a finished answer. Persist id before waiting, then GET that same id until completed or\nfailed. Completed output exposes output.answer and output.sources; failed exposes error.\nPreserve every source record and distinguish primary-source disclosures from uncertain or\nnon-comparable cloud metrics rather than inventing missing values.\n\nThe user explicitly chose mode research and recommended bounded depth M. M is not the\nserver default: the current API default is L. The query is scoped to 2024 earnings evidence.\n\nThe initial 2-second delay doubles to 10 seconds, never above 1 request/second; both the\n600-second deadline and 90-attempt cap stop waiting. On timeout or cancellation, return the\nsaved id for later resumption, not another POST. Unknown status stops. An ambiguous submit\nfailure requires reconciliation of known tasks before any manual decision to submit again;\nno server idempotency guarantee was established. Failed tasks report error, not stale output.\n\nThis offline plan resolves no key and makes no calls. maxSubmissions is one, retries zero.\nPlanner polling and response paths are not request payload fields.\n'
+
+Path("request-plan.json").write_text(json.dumps(PLAN, indent=2) + "\n", encoding="utf-8")
+Path("design.md").write_text(DESIGN, encoding="utf-8")
+LINKUP_REFERENCE_PY

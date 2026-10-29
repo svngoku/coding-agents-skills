@@ -3,6 +3,7 @@
 These marks identify the libraries and platforms covered by the gallery. They
 are bundled locally, not fetched from third-party logo services at runtime.
 Sources checked on 2026-10-25; the Cloudflare addition was checked on 2026-10-26.
+The shared Linkup mark was checked on 2026-10-29.
 
 | File / skill | Mark | Official asset source | Provenance |
 | --- | --- | --- | --- |
@@ -10,6 +11,7 @@ Sources checked on 2026-10-25; the Cloudflare addition was checked on 2026-10-26
 | `clairic.png` | Cloudflare | [Official color icon](https://cf-assets.www.cloudflare.com/slt3lc6tev37/CHOl0sUhrumCxOXfRotGt/081f81d52274080b2d026fdf163e3009/cloudflare-icon-color_3x.png) | [Cloudflare trademark guidelines](https://www.cloudflare.com/trademark/), [official Clairic model](https://developers.cloudflare.com/workers-ai/models/clairic/) |
 | `typesafe-ai.svg` | TypeSafe | [Light-background integration icon](https://raw.githubusercontent.com/typesafe-ai/n8n-nodes-typesafe-ai/main/nodes/TypeSafeAi/typeSafeAi.svg) | [Official TypeSafe integration](https://github.com/typesafe-ai/n8n-nodes-typesafe-ai/blob/main/nodes/TypeSafeAi/TypeSafeAi.node.ts) |
 | `langchain.png` | LangChain | [Official icon](https://raw.githubusercontent.com/langchain-ai/docs/main/src/images/brand/langchain-icon.png) | [Brand guidelines](https://www.langchain.com/brand-assets) |
+| `linkup.svg` / all five `linkup-*` skills | Linkup | [Official documentation favicon](https://docs.linkup.so/favicon.svg) | [Linkup documentation](https://docs.linkup.so/pages/integrations/linkup-skill), [Linkup](https://www.linkup.so/) |
 | `smolagents.svg` | Hugging Face | [Official color mark](https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg) | [Hugging Face brand assets](https://huggingface.co/brand) |
 | `scalingo.png` | Scalingo | [Official 96px favicon](https://doc.scalingo.com/favicon/favicon-96x96.png) | [Official favicon declarations](https://github.com/Scalingo/documentation/blob/master/src/_includes/organisms/favicons.html) |
 | `unsloth-hf-jobs.png` | Unsloth | [Official Studio favicon](https://raw.githubusercontent.com/unslothai/unsloth/main/studio/frontend/public/favicon.png) | [Unsloth repository](https://github.com/unslothai/unsloth) |
@@ -20,6 +22,9 @@ logo. SmolAgents uses the Hugging Face owner mark; prime-rl uses Prime Intellect
 mark. No distinct genai-tk mark was established, so it keeps its topic icon.
 Clairic uses Cloudflare's service-provider mark, not a logo for the unofficial
 Python SDK or an indication that Cloudflare endorses that SDK.
+Linkup's five local skill adaptations share one unchanged provider favicon,
+including its supplied black background. Their upstream MIT documentation
+license does not grant logo or trademark rights.
 
 Original colors, proportions, and supplied tile shapes are preserved. Adaption's
 32px favicon was converted from ICO to PNG. Prime Intellect's 800px PNG was
@@ -44,3 +49,5 @@ skill directory with an `.svg` or `.png` extension. `SkillIcon` discovers those
 files at build time. Check both themes and 24px rendering, and inspect SVGs for
 scripts, embedded documents, or external resources before bundling. Do not invent
 logos for unbranded topics. Missing or failed images retain the category icon.
+For multiple skills from one provider, add explicit aliases in `SkillIcon` rather
+than duplicating the same image.

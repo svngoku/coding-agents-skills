@@ -1,0 +1,54 @@
+#!/bin/sh
+# Trusted offline artifact generator; compatible with skillgrade's bash runner.
+set -eu
+python3 -I -S - <<'LINKUP_REFERENCE_PY'
+"""Write the trusted offline reference artifacts; never call Linkup."""
+
+import json
+from pathlib import Path
+
+PLAN = {'version': 1,
+ 'transport': {'baseUrl': 'https://api.linkup.so',
+               'headers': {'Authorization': 'Bearer ${LINKUP_API_KEY}',
+                           'Content-Type': 'application/json'},
+               'timeoutSeconds': 30},
+ 'steps': [{'id': 'discover',
+            'request': {'method': 'POST',
+                        'path': '/v1/search',
+                        'body': {'q': 'Find the official public careers page URL for synthetic '
+                                      'Northstar Metrics. Return evidence for the official company '
+                                      'domain, not an aggregator or a guessed URL.',
+                                 'depth': 'standard',
+                                 'outputType': 'searchResults'}}},
+           {'id': 'fetch',
+            'dependsOn': ['discover'],
+            'request': {'method': 'POST',
+                        'path': '/v1/fetch',
+                        'body': {'url': '${officialUrl}', 'renderJs': True}}}],
+ 'bindings': {'officialUrl': {'fromStep': 'discover',
+                              'fromPath': 'results',
+                              'select': 'single-official-careers-url',
+                              'requireOfficialDomainEvidence': True,
+                              'requireHttps': True,
+                              'onMissing': 'stop-no-fetch',
+                              'onAmbiguous': 'stop-no-fetch'}},
+ 'result': {'pageMarkdownFrom': 'fetch.markdown',
+            'pageUrlFrom': 'bindings.officialUrl',
+            'discoverySourcesFrom': 'discover.results',
+            'preserveSources': True,
+            'handoff': 'draft-only'},
+ 'policy': {'networkDuringPlanning': False,
+            'credentialSource': 'environment',
+            'maxRetries': 0,
+            'sourcePolicy': 'preserve',
+            'onError': 'stop-and-report',
+            'writeTargets': ['request-plan.json', 'design.md'],
+            'maxRequests': 2,
+            'missingValuePolicy': 'report-unknown',
+            'externalWrites': []}}
+
+DESIGN = "# Discovery-to-Fetch Boundary\n\nThis workflow is local orchestration of Search then Fetch, not /v1/workflow or an MCP tool.\nStandard Search returns an object containing results; it is enough to discover a URL without\nclaiming to scrape the discovered page in the same call. Inspect evidence for the official\ndomain and a single HTTPS careers URL, not an aggregator or guessed hostname.\n\nThe local binding officialUrl reads discover.results. Only after evidence passes and the\ndiscover step completes does ${officialUrl} resolve into Fetch's url field. No unresolved\ntemplate goes over the network. Missing or ambiguous evidence stops with no Fetch. These\ndependent calls cannot be an independent parallel Tasks batch.\n\nKeep the original discovery records, the chosen page URL, and Fetch markdown in a draft\nhandoff. Never infer private contacts or perform CRM/email writes or scheduling. Exactly two\ncalls and zero retries prevent budget creep; errors stop and missing facts remain unknown.\nThe entity is synthetic, so there may be no real official URL.\n\nAll templates, dependency edges, paths and policy fields are application-local, not invented\nREST parameters. The offline artifacts read no credentials and make no calls.\n"
+
+Path("request-plan.json").write_text(json.dumps(PLAN, indent=2) + "\n", encoding="utf-8")
+Path("design.md").write_text(DESIGN, encoding="utf-8")
+LINKUP_REFERENCE_PY

@@ -1,0 +1,81 @@
+#!/bin/sh
+# Trusted offline artifact generator; compatible with skillgrade's bash runner.
+set -eu
+python3 -I -S - <<'LINKUP_REFERENCE_PY'
+"""Write the trusted offline reference artifacts; never call Linkup."""
+
+import json
+from pathlib import Path
+
+PLAN = {'version': 1,
+ 'transport': {'baseUrl': 'https://api.linkup.so',
+               'headers': {'Authorization': 'Bearer ${LINKUP_API_KEY}',
+                           'Content-Type': 'application/json'},
+               'timeoutSeconds': 30},
+ 'submit': {'method': 'POST',
+            'path': '/v1/extract',
+            'body': {'q': 'Extract public events listed at this events directory, following its '
+                          'pagination and event detail links. Return the name, start date, venue '
+                          'and event URL; use null for missing dates or venues without inventing '
+                          'them.',
+                     'url': 'https://example.com/events',
+                     'verifyUrls': True,
+                     'schema': {'type': 'object',
+                                'properties': {'name': {'type': 'string'},
+                                               'startDate': {'type': ['string', 'null']},
+                                               'venue': {'type': ['string', 'null']},
+                                               'eventUrl': {'type': 'string', 'format': 'uri'}},
+                                'required': ['name', 'startDate', 'venue', 'eventUrl'],
+                                'additionalProperties': False}}},
+ 'poll': {'method': 'GET',
+          'path': '/v1/extract/${taskId}',
+          'taskIdFrom': 'submit.id',
+          'persistTaskIdBeforePolling': True,
+          'initialDelaySeconds': 30,
+          'backoffMultiplier': 1,
+          'maxDelaySeconds': 30,
+          'maxRequestsPerSecond': 1,
+          'deadlineSeconds': 900,
+          'maxAttempts': 30,
+          'states': {'pending': 'wait',
+                     'processing': 'wait',
+                     'completed': 'read-output',
+                     'failed': 'report-error'},
+          'onTimeout': 'return-task-id',
+          'onCancel': 'return-task-id',
+          'onUnknownStatus': 'stop-and-report',
+          'onAmbiguousSubmit': 'stop-and-reconcile',
+          'resubmitWhileActive': False},
+ 'result': {'resultUrlPath': 'output.resultUrl',
+            'rowsReturnedPath': 'output.rowsReturned',
+            'creditsUsedPath': 'output.creditsUsed',
+            'download': {'method': 'GET',
+                         'urlFrom': 'output.resultUrl',
+                         'headers': {},
+                         'requireHttps': True,
+                         'followRedirects': False,
+                         'timeoutSeconds': 30,
+                         'maxDownloads': 1,
+                         'maxBytes': 10000000,
+                         'format': 'ndjson',
+                         'recordType': 'object',
+                         'saveAs': 'events.ndjson',
+                         'persistBeforeExpiry': True,
+                         'urlLifetimeHours': 24,
+                         'onExpiredUrl': 'report-expired-no-resubmit'}},
+ 'policy': {'networkDuringPlanning': False,
+            'credentialSource': 'environment',
+            'maxRetries': 0,
+            'sourcePolicy': 'preserve',
+            'onError': 'stop-and-report',
+            'writeTargets': ['request-plan.json', 'design.md'],
+            'maxSubmissions': 1,
+            'missingValuePolicy': 'null-not-invented',
+            'betaAccess': 'user-confirmed-synthetic',
+            'onForbidden': 'stop-no-retry'}}
+
+DESIGN = '# Events Extraction Boundary\n\nThis exercise assumes synthetic, user-confirmed closed-beta entitlement, not general\navailability or verified account access. A 403 stops without retries or alternative credentials.\nThe seed is a supplied events listing; Extract follows listing pagination/detail links rather\nthan doing open-web discovery. GET /v1/extract lists tasks, not website pages.\n\nThe submitted schema describes one row, not an array or a response envelope. The task is\nasynchronous: persist id, poll the same id every 30 seconds, stop at 900 seconds or 30 polls,\nand retain id on timeout/cancellation. Completed output gives resultUrl, rowsReturned and\ncreditsUsed, not inline rows; failed/unknown status stops. No duplicate POST follows pending,\nprocessing, timeout, or an ambiguous transport failure.\n\nDownload the HTTPS result URL promptly and persist NDJSON as events.ndjson before its\n24-hour expiry. Each line must decode to an object. Do not parse the whole file as one JSON\narray, forward Linkup authorization to another host, follow redirects, or fabricate permanent\ndownload links. The byte/download/time bounds stop oversized retrieval. Expiry is reported,\nnot fixed by automatically purchasing another crawl.\n\nPreserve event URLs and null missing dates/venues. No arbitrary-site completeness or fixed\ncost is promised; report actual creditsUsed/rowsReturned. The plan is offline: even the future\ndownload is only configuration, and no key is read or dataset written here.\n'
+
+Path("request-plan.json").write_text(json.dumps(PLAN, indent=2) + "\n", encoding="utf-8")
+Path("design.md").write_text(DESIGN, encoding="utf-8")
+LINKUP_REFERENCE_PY

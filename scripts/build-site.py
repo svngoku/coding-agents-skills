@@ -59,6 +59,11 @@ SKILL_CATEGORY = {
     "ddd": "Architecture & Design",
     "genai-tk": "AI & Agents",
     "langchain": "AI & Agents",
+    "linkup-extract": "AI & Agents",
+    "linkup-fetch": "AI & Agents",
+    "linkup-research": "AI & Agents",
+    "linkup-search": "AI & Agents",
+    "linkup-workflow": "AI & Agents",
     "microservices-patterns": "Architecture & Design",
     "performance-optimization": "Performance",
     "prime-rl": "Post-Training & ML",
@@ -234,14 +239,14 @@ def plain_markdown(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def match_section(title: str, skill_name: str) -> bool:
+def match_section(title: str, skill_name: str, *, exact: bool = False) -> bool:
     """Match a README section (e.g. "Domain-Driven Design (DDD)") to a skill folder."""
     slug = slugify(title)
     slug_tokens = set(slug.split("-"))
-    if re.search(rf"(?<![a-z0-9-]){re.escape(skill_name)}(?![a-z0-9-])", slug):
+    if re.search(rf"(?:^|-){re.escape(skill_name)}(?:-|$)", slug):
         return True
     first = skill_name.split("-")[0]
-    return first in slug_tokens
+    return not exact and first in slug_tokens
 
 
 # ---------------------------------------------------------------------------
@@ -283,13 +288,16 @@ def collect_skill(skill_dir: Path, readme_fields: dict, base_url: str, branch: s
     fields = readme_fields.get(name, {})
 
     references = []
-    for ref in sorted((skill_dir / "references").glob("*.md")) if (skill_dir / "references").is_dir() else []:
+    for ref in sorted((skill_dir / "references").rglob("*.md")) if (skill_dir / "references").is_dir() else []:
+        if "__pycache__" in ref.relative_to(skill_dir).parts:
+            continue
+        ref_path = ref.relative_to(skill_dir / "references").as_posix()
         references.append(
             {
-                "file": ref.name,
+                "file": ref_path,
                 "title": first_heading(read_text(ref)) or slugify(ref.stem).replace("-", " ").title(),
                 "lines": count_lines(ref),
-                "url": f"{base_url}/blob/{branch}/skills/{name}/references/{ref.name}",
+                "url": f"{base_url}/blob/{branch}/skills/{name}/references/{ref_path}",
             }
         )
 
@@ -319,6 +327,9 @@ def collect_skill(skill_dir: Path, readme_fields: dict, base_url: str, branch: s
 
     artifacts = {}
     for kind, _ in ARTIFACT_KINDS:
+        if kind == "references":
+            artifacts[kind] = len(references)
+            continue
         path = skill_dir / kind
         artifacts[kind] = sum(
             1 for item in path.iterdir()
@@ -405,26 +416,28 @@ def collect_skill(skill_dir: Path, readme_fields: dict, base_url: str, branch: s
 def collect_skills() -> list[dict]:
     readme = read_text(REPO_ROOT / "README.md")
     sections = readme_sections(readme)
+    skill_dirs = sorted(p for p in SKILLS_DIR.iterdir() if p.is_dir())
 
     readme_fields: dict[str, dict] = {}
     used: set[str] = set()
     for title, body in sections:
         fields = section_fields(body)
         fields["__title__"] = [title]
-        for skill_dir in sorted(p for p in SKILLS_DIR.iterdir() if p.is_dir()):
-            name = skill_dir.name
+        matches = [path.name for path in skill_dirs if match_section(title, path.name, exact=True)]
+        if not matches:
+            matches = [path.name for path in skill_dirs if match_section(title, path.name)]
+        for name in matches:
             if name in used:
                 continue
-            if match_section(title, name):
-                readme_fields[name] = fields
-                used.add(name)
-                break
+            readme_fields[name] = fields
+            used.add(name)
+            break
 
     base_url = repo_url()
     branch = repo_branch()
     skills = [
         collect_skill(path, readme_fields, base_url, branch)
-        for path in sorted(p for p in SKILLS_DIR.iterdir() if p.is_dir())
+        for path in skill_dirs
     ]
     return skills
 

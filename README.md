@@ -10,7 +10,7 @@ This repository provides production-ready skill modules for AI coding agents, en
 - Write and maintain automated tests across the full test pyramid
 - Harden applications against OWASP-class vulnerabilities
 - Find and fix performance problems by measuring first
-- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk, TypeSafe/Jev, Clairic)
+- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk, TypeSafe/Jev, Clairic, Linkup)
 - Post-train and fine-tune LLMs (prime-rl, Unsloth)
 - Deploy and operate applications on cloud platforms (Scalingo)
 - Follow best practices in code generation, refactoring, and UI development
@@ -49,7 +49,7 @@ npx skills add https://github.com/svngoku/coding-agents-skills/tree/main/skills/
 ### Install every skill
 
 ```bash
-# All 17 skills, for one agent
+# All 22 skills, for one agent
 npx skills add svngoku/coding-agents-skills --skill '*' -a claude-code
 
 # All skills, for every agent the CLI can install to, without prompts
@@ -169,6 +169,22 @@ coding-agents-skills/
 │   │       ├── middleware.md
 │   │       ├── multi-agent.md
 │   │       └── retrieval.md
+│   │
+│   ├── linkup-extract/                 # Linkup listing-page extraction (closed beta)
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── linkup-fetch/                   # Linkup known-URL Markdown retrieval
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── linkup-research/                # Linkup multi-source investigations
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── linkup-search/                  # Linkup web search and retrieval plans
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── linkup-workflow/                # Linkup multi-step workflows and recipes
+│   │   ├── SKILL.md
+│   │   └── references/
 │   │
 │   ├── microservices-patterns/         # Distributed systems patterns
 │   │   ├── SKILL.md
@@ -664,6 +680,96 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
+### 18. Linkup Search
+**Status:** ✅ Complete
+
+**Description:** Use Linkup for web lookups and source-backed answers, choosing search depth, output type, and a query phrased as a retrieval plan.
+
+**Capabilities:**
+- Select search depth and output shape for the task
+- Write retrieval plans with explicit sources, evidence, and constraints
+- Combine discovery with targeted page retrieval
+
+**Use Cases:**
+- Finding current product documentation, pricing, and company evidence
+- Producing sourced answers or structured research fields
+
+**Reference Files:** 5 guides
+
+---
+
+### 19. Linkup Fetch
+**Status:** ✅ Complete
+
+**Description:** Read one known URL as clean Markdown with Linkup Fetch, without turning a page retrieval into a discovery search.
+
+**Capabilities:**
+- Retrieve a known page and choose an appropriate rendering strategy
+- Distinguish Fetch from Search's discovery and scrape workflows
+- Preserve the source URL and handle failed or incomplete retrieval
+
+**Use Cases:**
+- Reading a documentation, pricing, or article URL already supplied by the user
+- Retrieving a discovered source for a later extraction step
+
+**Reference Files:** 3 guides
+
+---
+
+### 20. Linkup Research
+**Status:** ✅ Complete
+
+**Description:** Plan minutes-long, multi-source investigations through Linkup Research instead of treating a complex investigation as a quick lookup.
+
+**Capabilities:**
+- Scope an investigation and its evidence requirements
+- Handle the research job lifecycle and retain its identifier
+- Separate research evidence from final judgments
+
+**Use Cases:**
+- Investigating markets, competitors, or technical questions across sources
+- Producing a longer research deliverable with an explicit scope
+
+**Reference Files:** 3 guides
+
+---
+
+### 21. Linkup Extract
+**Status:** ✅ Complete
+
+**Description:** Extract structured rows from one listing page with Linkup's closed-beta Extract endpoint, distinct from general web discovery.
+
+**Capabilities:**
+- Define row-level schemas for listing-page extraction
+- Separate bulk extraction from Search and single-page reading
+- Check beta access and retain source provenance
+
+**Use Cases:**
+- Turning a directory, event listing, or product catalog into structured rows
+- Choosing the right endpoint before requesting bulk extraction
+
+**Reference Files:** 3 guides
+
+---
+
+### 22. Linkup Workflow
+**Status:** ✅ Complete
+
+**Description:** Turn a business goal into a multi-step Linkup workflow using the official workflow guidance and ready-to-adapt recipes.
+
+**Capabilities:**
+- Route each stage to Search, Fetch, Research, or Extract
+- Define evidence, stop conditions, and structured handoffs
+- Adapt the bundled workflow recipes rather than invent unsupported tool calls
+
+**Use Cases:**
+- Company research, monitoring, and evidence-backed enrichment
+- Building a bounded search-then-read or multi-source research workflow
+
+**Reference Files:** 25 guides, including all 18 workflow recipes
+
+---
+
 ## 🚀 Usage
 
 ### For AI Coding Agents
@@ -905,6 +1011,11 @@ Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#rea
 | prime-rl | ✅ `eval.yaml` | ready |
 | typesafe-ai | ✅ `eval.yaml` | ready |
 | clairic | ✅ `eval.yaml` | ready |
+| linkup-search | ✅ `eval.yaml` | ready |
+| linkup-fetch | ✅ `eval.yaml` | ready |
+| linkup-research | ✅ `eval.yaml` | ready |
+| linkup-extract | ✅ `eval.yaml` | ready |
+| linkup-workflow | ✅ `eval.yaml` | ready |
 
 ### Running locally (no CI)
 
@@ -959,6 +1070,7 @@ Contributions are welcome! To add a new skill:
 - [x] prime-rl post-training skill
 - [x] TypeSafe AI / Jev structured judgments skill
 - [x] Clairic unofficial Python SDK skill
+- [x] Linkup Search, Fetch, Research, Extract, and Workflow skills
 - [ ] MCP server authoring skill
 - [ ] RAG patterns skill (retrieval architecture deep dive)
 - [ ] LLM evaluation & observability skill (Langfuse, evals)
@@ -976,6 +1088,7 @@ Contributions are welcome! To add a new skill:
 - [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) - Asynchronous RL post-training at scale
 - [Adaption](https://docs.adaptionlabs.ai/) - Synthetic data augmentation platform
 - [Clairic Python SDK (unofficial)](https://github.com/VianneyMI/clairic) - Typed extraction for [Cloudflare's Clairic model](https://developers.cloudflare.com/workers-ai/models/clairic/)
+- [Linkup skills](https://docs.linkup.so/pages/integrations/linkup-skill) - Five local adaptations from the [MIT-licensed official source pack](https://github.com/LinkupPlatform/linkup-for-agents/tree/de40e04c39f6740bb4f70b00f2ef3ce04b6b88bc), with attribution and current API corrections
 - [OWASP Top 10](https://owasp.org/Top10/) - Web application security risks
 - [Pact](https://pact.io/) - Consumer-driven contract testing
 - [OpenTelemetry](https://opentelemetry.io/) - Distributed tracing and observability
@@ -994,6 +1107,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 - Inspired by the need for reusable, production-ready AI agent skills
 - Built with insights from software architecture patterns and modern AI frameworks
+- Linkup's MIT-licensed source knowledge and workflow recipes, with notices retained in each adapted skill
 - Community feedback and contributions welcome
 
 ---

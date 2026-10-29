@@ -1,0 +1,48 @@
+#!/bin/sh
+# Trusted offline artifact generator; compatible with skillgrade's bash runner.
+set -eu
+python3 -I -S - <<'LINKUP_REFERENCE_PY'
+"""Write the trusted offline reference artifacts; never call Linkup."""
+
+import json
+from pathlib import Path
+
+PLAN = {'version': 1,
+ 'transport': {'baseUrl': 'https://api.linkup.so',
+               'headers': {'Authorization': 'Bearer ${LINKUP_API_KEY}',
+                           'Content-Type': 'application/json'},
+               'timeoutSeconds': 30},
+ 'request': {'method': 'POST',
+             'path': '/v1/search',
+             'body': {'q': 'Find the official pricing page for synthetic Northstar Metrics. '
+                           'Discover its URL, then scrape it; return the company and each '
+                           "product's plan names, published prices or null, and exact supporting "
+                           'page URLs.',
+                      'depth': 'deep',
+                      'outputType': 'structured',
+                      'includeSources': True,
+                      'structuredOutputSchema': '{"type": "object", "properties": {"company": '
+                                                '{"type": "string"}, "plans": {"type": "array", '
+                                                '"items": {"type": "object", "properties": '
+                                                '{"product": {"type": "string"}, "name": {"type": '
+                                                '"string"}, "price": {"type": ["string", "null"]}, '
+                                                '"sourceUrl": {"type": "string", "format": '
+                                                '"uri"}}, "required": ["product", "name", "price", '
+                                                '"sourceUrl"], "additionalProperties": false}}}, '
+                                                '"required": ["company", "plans"], '
+                                                '"additionalProperties": false}'}},
+ 'result': {'dataPath': 'data', 'sourcesPath': 'sources', 'preserveSources': True},
+ 'policy': {'networkDuringPlanning': False,
+            'credentialSource': 'environment',
+            'maxRetries': 0,
+            'sourcePolicy': 'preserve',
+            'onError': 'stop-and-report',
+            'writeTargets': ['request-plan.json', 'design.md'],
+            'maxRequests': 1,
+            'missingValuePolicy': 'null-not-invented'}}
+
+DESIGN = '# Pricing Discovery Boundary\n\nThis is an offline request plan, not an API result. Search uses REST `q` (SDK `query` is\ndifferent). Deep supports discovering and then scraping a new URL within one call; standard\ncannot perform that discovered-URL chain. The synthetic company may have no real matches.\n\n`structuredOutputSchema` is a serialized root-object JSON Schema. The input outputType is\n`structured`, not `structuredWithSources`. With includeSources enabled, read `data` and\n`sources` from the response wrapper. Preserve every source record and exact URL; use null\nfor unpublished prices, never estimates presented as facts. Query semantics deliberately\nrequest official evidence rather than invented pricing.\n\nTransport templates are local planner expressions resolved only by a separately authorized\nruntime. No key lookup, network operation, or successful-response claim occurs here. One\nrequest and no retries bound spend; an error/no result stops and is reported.\n'
+
+Path("request-plan.json").write_text(json.dumps(PLAN, indent=2) + "\n", encoding="utf-8")
+Path("design.md").write_text(DESIGN, encoding="utf-8")
+LINKUP_REFERENCE_PY

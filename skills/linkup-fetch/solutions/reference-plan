@@ -1,0 +1,52 @@
+#!/bin/sh
+# Trusted offline artifact generator; compatible with skillgrade's bash runner.
+set -eu
+python3 -I -S - <<'LINKUP_REFERENCE_PY'
+"""Write the trusted offline reference artifacts; never call Linkup."""
+
+import json
+from pathlib import Path
+
+PLAN = {'version': 1,
+ 'transport': {'baseUrl': 'https://api.linkup.so',
+               'headers': {'Authorization': 'Bearer ${LINKUP_API_KEY}',
+                           'Content-Type': 'application/json'},
+               'timeoutSeconds': 30},
+ 'request': {'method': 'POST',
+             'path': '/v1/fetch',
+             'body': {'url': 'https://example.com/careers',
+                      'renderJs': True,
+                      'schema': {'type': 'object',
+                                 'properties': {'jobs': {'type': 'array',
+                                                         'items': {'type': 'object',
+                                                                   'properties': {'position': {'type': 'string'},
+                                                                                  'city': {'type': 'string'}},
+                                                                   'required': ['position', 'city'],
+                                                                   'additionalProperties': False}}},
+                                 'required': ['jobs'],
+                                 'additionalProperties': False},
+                      'instructions': 'When a position is listed in multiple cities, emit one jobs '
+                                      'item per city. Omit unavailable fields instead of inventing '
+                                      'values.',
+                      'includeRawContent': True}},
+ 'result': {'markdownPath': 'markdown',
+            'dataPath': 'data',
+            'faviconPath': 'favicon',
+            'rawContentPath': 'rawContent',
+            'contentTypePath': 'contentType',
+            'pageUrlFrom': 'request.body.url',
+            'missingFields': 'omit'},
+ 'policy': {'networkDuringPlanning': False,
+            'credentialSource': 'environment',
+            'maxRetries': 0,
+            'sourcePolicy': 'preserve',
+            'onError': 'stop-and-report',
+            'writeTargets': ['request-plan.json', 'design.md'],
+            'maxRequests': 1,
+            'missingValuePolicy': 'omit-not-invented'}}
+
+DESIGN = "# Careers Page Boundary\n\nThe seed URL is already known, so Fetch with an object schema is sufficient; open-web\nSearch or multi-page Extract would change scope. renderJs is enabled for this unknown page.\nThe instructions split positions by city. Fetch instructions require the accompanying schema.\n\n`schema` is a JSON object, unlike Search's serialized structuredOutputSchema.\nThe response keeps markdown, favicon, extracted data, rawContent and contentType using the\ncurrent includeRawContent request flag. The page URL is preserved from input because Fetch\ndoes not need to echo it. Even schema-required fields may be omitted by extraction; retain\nomissions rather than fail or invent a city. This is not authenticated browsing or link traversal.\n\nOnly a separate authorized runtime may resolve the credential placeholder and make the one\nrequest. Offline generation does no network I/O or key reads. Zero retries bound spend and\nerrors stop rather than silently escalating to another API or more expensive mode.\n"
+
+Path("request-plan.json").write_text(json.dumps(PLAN, indent=2) + "\n", encoding="utf-8")
+Path("design.md").write_text(DESIGN, encoding="utf-8")
+LINKUP_REFERENCE_PY

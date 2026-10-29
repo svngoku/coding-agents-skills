@@ -10,14 +10,24 @@ const marks = import.meta.glob<string>("../assets/brands/*.{svg,png}", {
   query: "?url",
 });
 
+// The five official Linkup skills share their provider's mark.
+const sharedMarkNames: Readonly<Record<string, string>> = {
+  "linkup-extract": "linkup",
+  "linkup-fetch": "linkup",
+  "linkup-research": "linkup",
+  "linkup-search": "linkup",
+  "linkup-workflow": "linkup",
+};
+
 type SkillIconProps = {
   skill: Pick<Skill, "name" | "category">;
 };
 
 export function SkillIcon({ skill }: SkillIconProps) {
+  const markName = sharedMarkNames[skill.name] ?? skill.name;
   const source =
-    marks[`../assets/brands/${skill.name}.svg`] ??
-    marks[`../assets/brands/${skill.name}.png`];
+    marks[`../assets/brands/${markName}.svg`] ??
+    marks[`../assets/brands/${markName}.png`];
   const [failedSource, setFailedSource] = useState<string | null>(null);
   const showMark = source && failedSource !== source;
   const Icon = getCategoryIcon(skill.category);

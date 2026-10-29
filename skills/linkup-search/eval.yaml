@@ -1,0 +1,20 @@
+# Offline configuration generation; no live Linkup requests.
+version: "1"
+defaults:
+  agent: command
+  command: opencode run
+  provider: local
+  trials: 5
+  timeout: 300
+  threshold: 0.8
+tasks:
+  - name: pricing-discovery
+    instruction: instructions/request-plan.md
+    solution: solutions/reference-plan
+    graders:
+      - type: deterministic
+        run: python3 -I -S graders/check.py
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md
+        weight: 0.3

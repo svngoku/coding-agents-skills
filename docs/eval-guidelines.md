@@ -124,3 +124,8 @@ when a skill drops below its `threshold`.
 | prime-rl | ✅ | code-gen | ready |
 | typesafe-ai | ✅ | code-gen | ready |
 | clairic | ✅ | code-gen | ready |
+| linkup-search | ✅ | code-gen | ready |
+| linkup-fetch | ✅ | code-gen | ready |
+| linkup-research | ✅ | code-gen | ready |
+| linkup-extract | ✅ | code-gen | ready |
+| linkup-workflow | ✅ | code-gen | ready |
