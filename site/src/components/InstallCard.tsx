@@ -24,6 +24,8 @@ const AGENTS = [
   { value: "codex", label: "Codex" },
   { value: "opencode", label: "OpenCode" },
   { value: "cursor", label: "Cursor" },
+  { value: "amp", label: "Amp" },
+  { value: "droid", label: "Droid" },
 ];
 
 type InstallMode = "skill" | "all" | "update";
@@ -209,7 +211,7 @@ export function InstallCard({ slug, cliUrl, skills }: InstallCardProps) {
             tabIndex={0}
             role="region"
             aria-label="Installation command"
-            className="min-h-22 px-4 py-4 font-mono text-[12px] leading-6 whitespace-pre-wrap [overflow-wrap:anywhere]"
+            className="px-4 py-3 font-mono text-[12px] leading-6 whitespace-pre-wrap [overflow-wrap:anywhere]"
           >
             <span aria-hidden="true" className="mr-2 text-[#a9d1b5]">
               $
