@@ -129,3 +129,4 @@ when a skill drops below its `threshold`.
 | linkup-research | ✅ | code-gen | ready |
 | linkup-extract | ✅ | code-gen | ready |
 | linkup-workflow | ✅ | code-gen | ready |
+| mastra | ✅ | code-gen (deterministic 0.7 / rubric 0.3) | ready |

@@ -32,6 +32,12 @@ class ArtifactCountTests(unittest.TestCase):
     def test_absent_artifact_directories_are_zero(self):
         self.assertTrue(all(count == 0 for count in self.collect()["artifacts"].values()))
 
+    def test_skill_frontmatter_is_not_rendered_as_document_content(self):
+        document = self.collect()["documents"][0]
+        self.assertNotIn("name: example", document["html"])
+        self.assertNotIn("description: Example", document["html"])
+        self.assertIn('<h1 id="example">Example</h1>', document["html"])
+
     def test_python_caches_do_not_change_the_payload(self):
         scripts = self.skill / "scripts"
         scripts.mkdir()

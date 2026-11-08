@@ -64,6 +64,7 @@ SKILL_CATEGORY = {
     "linkup-research": "AI & Agents",
     "linkup-search": "AI & Agents",
     "linkup-workflow": "AI & Agents",
+    "mastra": "AI & Agents",
     "microservices-patterns": "Architecture & Design",
     "performance-optimization": "Performance",
     "prime-rl": "Post-Training & ML",
@@ -126,6 +127,16 @@ def parse_frontmatter_block(text: str) -> dict:
     if current:
         data[current] = " ".join(x for x in folded if x).strip()
     return data
+
+
+def strip_frontmatter_block(text: str) -> str:
+    """Keep loader metadata out of the rendered skill document."""
+    if not text.startswith("---"):
+        return text
+    end = text.find("\n---", 3)
+    if end == -1:
+        return text
+    return text[end + 4 :].lstrip("\r\n")
 
 
 def first_heading(text: str) -> str:
@@ -341,7 +352,9 @@ def collect_skill(skill_dir: Path, readme_fields: dict, base_url: str, branch: s
             "path": "SKILL.md",
             "label": "SKILL.md",
             "kind": "skill",
-            "html": rewrite_links(render_markdown(text), "SKILL.md", name, base_url, branch),
+            "html": rewrite_links(
+                render_markdown(strip_frontmatter_block(text)), "SKILL.md", name, base_url, branch
+            ),
             "lines": count_lines(skill_md),
             "url": f"{base_url}/blob/{branch}/skills/{name}/SKILL.md",
         }
