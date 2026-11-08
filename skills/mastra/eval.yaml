@@ -1,0 +1,22 @@
+# Offline skillgrade evaluation for the Mastra support/refund agent task.
+version: "1"
+
+defaults:
+  agent: command
+  command: opencode run
+  provider: local
+  trials: 5
+  timeout: 300
+  threshold: 0.8
+
+tasks:
+  - name: build-support-agent
+    instruction: instructions/build-support-agent.md
+    solution: solutions/reference-support-agent
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md
+        weight: 0.3

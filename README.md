@@ -10,7 +10,7 @@ This repository provides production-ready skill modules for AI coding agents, en
 - Write and maintain automated tests across the full test pyramid
 - Harden applications against OWASP-class vulnerabilities
 - Find and fix performance problems by measuring first
-- Work with modern AI frameworks and tools (LangChain, SmolAgents, genai-tk, TypeSafe/Jev, Clairic, Linkup)
+- Work with modern AI frameworks and tools (Mastra, LangChain, SmolAgents, genai-tk, TypeSafe/Jev, Clairic, Linkup)
 - Post-train and fine-tune LLMs (prime-rl, Unsloth)
 - Deploy and operate applications on cloud platforms (Scalingo)
 - Follow best practices in code generation, refactoring, and UI development
@@ -49,7 +49,7 @@ npx skills add https://github.com/svngoku/coding-agents-skills/tree/main/skills/
 ### Install every skill
 
 ```bash
-# All 22 skills, for one agent
+# All 23 skills, for one agent
 npx skills add svngoku/coding-agents-skills --skill '*' -a claude-code
 
 # All skills, for every agent the CLI can install to, without prompts
@@ -185,6 +185,11 @@ coding-agents-skills/
 │   ├── linkup-workflow/                # Linkup multi-step workflows and recipes
 │   │   ├── SKILL.md
 │   │   └── references/
+│   │
+│   ├── mastra/                         # Mastra TypeScript AI agent framework
+│   │   ├── SKILL.md
+│   │   ├── references/                # 14 production agent-building guides
+│   │   └── tests/                     # Offline grader and reference-solution regressions
 │   │
 │   ├── microservices-patterns/         # Distributed systems patterns
 │   │   ├── SKILL.md
@@ -770,6 +775,32 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
+### 23. Mastra
+**Status:** ✅ Complete
+
+**Description:** Build production TypeScript AI agents with Mastra, combining semantic model decisions with deterministic workflows, authorization, approval, and recovery controls.
+
+**Capabilities:**
+- Agent instructions, model routing, streaming, structured output, and bounded execution
+- Typed tools with Zod contracts, tenant authorization, idempotency, and safe failure handling
+- Conversation memory, working memory, semantic recall, and context engineering
+- Durable workflows, control flow, suspension, exact-argument human approval, and replay recovery
+- Chunking, embeddings, vector retrieval, reranking, source provenance, and Knowledge alpha cautions
+- Guardrail processors, supervisor/subagent delegation, and MCP client/server trust boundaries
+- Deterministic gates, model-graded evals, live sampling, tracing, redaction, and cost monitoring
+- Mastra server build, health, persistent state, graceful shutdown, rollout, and incident recovery
+- Offline skillgrade harness with reference solution and grader mutation tests
+
+**Use Cases:**
+- Building a support agent that retrieves evidence and gates refunds behind policy and human review
+- Implementing durable TypeScript workflows with model-powered steps and resumable execution
+- Adding tenant-scoped memory, RAG, external MCP tools, or specialist subagents
+- Evaluating, tracing, deploying, and reviewing production Mastra agent systems
+
+**Reference Files:** 14 guides
+
+---
+
 ## 🚀 Usage
 
 ### For AI Coding Agents
@@ -1016,6 +1047,7 @@ Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#rea
 | linkup-research | ✅ `eval.yaml` | ready |
 | linkup-extract | ✅ `eval.yaml` | ready |
 | linkup-workflow | ✅ `eval.yaml` | ready |
+| mastra | ✅ `eval.yaml` | ready |
 
 ### Running locally (no CI)
 
@@ -1071,6 +1103,7 @@ Contributions are welcome! To add a new skill:
 - [x] TypeSafe AI / Jev structured judgments skill
 - [x] Clairic unofficial Python SDK skill
 - [x] Linkup Search, Fetch, Research, Extract, and Workflow skills
+- [x] Mastra AI agent framework skill
 - [ ] MCP server authoring skill
 - [ ] RAG patterns skill (retrieval architecture deep dive)
 - [ ] LLM evaluation & observability skill (Langfuse, evals)
@@ -1079,6 +1112,7 @@ Contributions are welcome! To add a new skill:
 
 ## 🔗 Related Projects
 
+- [Mastra](https://github.com/mastra-ai/mastra) - TypeScript framework for agents, workflows, RAG, evals, and deployment
 - [Hugging Face SmolAgents](https://github.com/huggingface/smolagents) - Minimalist AI agent framework
 - [LangChain](https://github.com/langchain-ai/langchain) - Building applications with LLMs
 - [genai-tk](https://github.com/tclatos/genai-tk) - YAML-driven GenAI toolkit
