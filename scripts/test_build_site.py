@@ -15,6 +15,19 @@ SITE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SITE)
 
 
+class RepoBranchTests(unittest.TestCase):
+    def test_local_feature_branch_does_not_change_the_payload(self):
+        with patch.dict("os.environ", {}, clear=True), patch.object(
+            SITE, "git_output", return_value="add-mastra-skill"
+        ) as git_output:
+            self.assertEqual(SITE.repo_branch(), "main")
+            git_output.assert_not_called()
+
+    def test_ci_branch_is_used_for_source_links(self):
+        with patch.dict("os.environ", {"GITHUB_REF_NAME": "main"}, clear=True):
+            self.assertEqual(SITE.repo_branch(), "main")
+
+
 class ArtifactCountTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

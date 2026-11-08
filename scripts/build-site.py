@@ -183,14 +183,8 @@ def repo_slug() -> str:
 
 
 def repo_branch() -> str:
-    """Branch used for the GitHub links (CI checks out a detached HEAD)."""
-    ci_ref = os.environ.get("GITHUB_REF_NAME")
-    if ci_ref:
-        return ci_ref
-    branch = git_output("rev-parse", "--abbrev-ref", "HEAD")
-    if branch in {"", "HEAD"}:
-        return "main"
-    return branch
+    """Branch used for GitHub links; local builds stay reproducible on main."""
+    return os.environ.get("GITHUB_REF_NAME") or "main"
 
 
 # ---------------------------------------------------------------------------
