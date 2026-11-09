@@ -3,7 +3,7 @@
 These marks identify the libraries and platforms covered by the gallery. They
 are bundled locally, not fetched from third-party logo services at runtime.
 Sources checked on 2026-10-25; the Cloudflare addition was checked on 2026-10-26.
-The shared Linkup mark was checked on 2026-10-29.
+The shared Linkup mark was checked on 2026-10-29. The OpenAI mark was checked on 2026-11-09.
 
 | File / skill | Mark | Official asset source | Provenance |
 | --- | --- | --- | --- |
@@ -15,6 +15,7 @@ The shared Linkup mark was checked on 2026-10-29.
 | `smolagents.svg` | Hugging Face | [Official color mark](https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg) | [Hugging Face brand assets](https://huggingface.co/brand) |
 | `scalingo.png` | Scalingo | [Official 96px favicon](https://doc.scalingo.com/favicon/favicon-96x96.png) | [Official favicon declarations](https://github.com/Scalingo/documentation/blob/master/src/_includes/organisms/favicons.html) |
 | `unsloth-hf-jobs.png` | Unsloth | [Official Studio favicon](https://raw.githubusercontent.com/unslothai/unsloth/main/studio/frontend/public/favicon.png) | [Unsloth repository](https://github.com/unslothai/unsloth) |
+| `harness-repo.png` | OpenAI | [Official OpenAI GitHub organization avatar, 96px](https://github.com/openai.png?size=96) | [OpenAI on GitHub](https://github.com/openai), [Harness engineering](https://openai.com/index/harness-engineering/) |
 | `prime-rl.png` | Prime Intellect | [Official site icon](https://www.primeintellect.ai/icons/logo-icon.png) | [Prime Intellect](https://www.primeintellect.ai/), [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) |
 
 TypeSafe's mark identifies the provider, not a separately verified Jev-specific
@@ -22,6 +23,9 @@ logo. SmolAgents uses the Hugging Face owner mark; prime-rl uses Prime Intellect
 mark. No distinct genai-tk mark was established, so it keeps its topic icon.
 Clairic uses Cloudflare's service-provider mark, not a logo for the unofficial
 Python SDK or an indication that Cloudflare endorses that SDK.
+The OpenAI mark credits the approach that Harness Repo adapts, not authorship or endorsement:
+the skill is an independent extension, and OpenAI has not reviewed or approved it. openai.com
+blocked automated retrieval of its brand assets, so the organization's own GitHub avatar is used.
 Linkup's five local skill adaptations share one unchanged provider favicon,
 including its supplied black background. Their upstream MIT documentation
 license does not grant logo or trademark rights.

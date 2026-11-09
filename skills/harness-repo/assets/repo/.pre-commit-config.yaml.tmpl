@@ -1,0 +1,13 @@
+# Install: pipx install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: golden-principles
+        name: golden principles
+        entry: node .opencode/tools/golden_principles.js
+        language: system
+        pass_filenames: false

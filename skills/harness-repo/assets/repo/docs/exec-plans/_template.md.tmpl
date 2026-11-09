@@ -1,0 +1,49 @@
+---
+title: "{Plan title}"
+area: "{domain / layer}"
+status: draft            # draft | in_progress | blocked | completed
+risk: low                # low | medium | high
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+author: agent
+---
+
+# Plan: {title}
+
+## Intent
+One paragraph: what and why.
+
+## Acceptance Criteria
+- [ ] Observable, testable outcome
+
+## Flow
+```mermaid
+flowchart LR
+    A["Input / trigger"] --> B["Step 1"] --> C["Step 2"] --> D["Observable result"]
+```
+
+## Interactions (delete if single-component)
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant S as Service
+    participant D as Datastore
+    U->>S: request
+    S->>D: query
+    D-->>S: rows
+    S-->>U: response
+```
+
+## Security impact
+- [ ] Touches auth / PII / payments / secrets / CI? If yes: human review required, see `docs/SECURITY.md` section 8.
+
+## Risks & Rollback
+| Risk | Likelihood | Mitigation / rollback |
+|------|-----------|-----------------------|
+
+## Non-Goals
+-
+
+## Progress Log
+| Date | Update |
+|------|--------|

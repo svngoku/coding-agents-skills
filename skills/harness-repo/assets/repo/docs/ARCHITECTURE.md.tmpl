@@ -1,0 +1,60 @@
+# Architecture — {{PROJECT_NAME}}
+
+> Tailor the layers below to the real stack, then keep this file honest.
+
+## Layer model
+
+Dependencies point one way only: a layer may import from layers below it, never above.
+
+```mermaid
+flowchart TB
+    UI["UI / Interface"] --> RT["Runtime / Transport"]
+    RT --> SV["Service (business logic)"]
+    SV --> RP["Repo (data access)"]
+    RP --> CF["Config"]
+    TY["Types (shared, no dependencies)"] -.-> UI
+    TY -.-> RT
+    TY -.-> SV
+    TY -.-> RP
+```
+
+## Trust boundaries
+
+```mermaid
+flowchart LR
+    U["User / Client"] -->|untrusted input| E["Edge: validate + authenticate"]
+    E --> S["Application services"]
+    S --> D[("Datastore")]
+    S --> X["Third-party APIs"]
+```
+
+## Repository layout
+
+```mermaid
+flowchart TD
+    R["{{PROJECT_NAME}}/"] --> AG["AGENTS.md"]
+    R --> D["docs/"]
+    R --> O[".opencode/"]
+    R --> GH[".github/"]
+    D --> A["ARCHITECTURE · DESIGN · SECURITY · RELIABILITY"]
+    D --> B["PRODUCT_SENSE · QUALITY_SCORE · PLANS"]
+    D --> C["design-docs/ · exec-plans/ · product-specs/ · references/"]
+```
+
+## Golden principles
+
+Enforced mechanically by `node .opencode/tools/golden_principles.js` (also runs in CI).
+
+| ID | Principle | Enforced by |
+|----|-----------|-------------|
+| GP-1 | `AGENTS.md` is a map, under 150 lines | line count |
+| GP-2 | All 7 top-level docs exist | file existence |
+| GP-3 | Diagrams are Mermaid only: no ASCII art, PlantUML, or DOT | box-char scan, extension scan |
+| GP-4 | No secrets committed; `.env` is git-ignored | pattern scan, `.gitignore` check |
+| GP-5 | Active exec-plans have frontmatter with `status` | frontmatter check |
+| GP-6 | Relative links in docs resolve | link check |
+| GP-7 | CI declares `permissions:` and never uses floating refs (`@main`) | workflow scan |
+
+## Technology choices
+
+Stack: **{{STACK}}**. Record each significant choice as an ADR in `docs/design-docs/`.

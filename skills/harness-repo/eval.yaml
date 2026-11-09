@@ -1,0 +1,22 @@
+# Offline skillgrade evaluation for the harness-repo bootstrap task.
+version: "1"
+
+defaults:
+  agent: command
+  command: opencode run
+  provider: local
+  trials: 5
+  timeout: 300
+  threshold: 0.8
+
+tasks:
+  - name: bootstrap-ledger-api
+    instruction: instructions/bootstrap-ledger-api.md
+    solution: solutions/reference-ledger-api
+    graders:
+      - type: deterministic
+        run: python3 graders/check.py
+        weight: 0.7
+      - type: llm_rubric
+        rubric: rubrics/quality.md
+        weight: 0.3

@@ -11,6 +11,7 @@ This repository provides production-ready skill modules for AI coding agents, en
 - Harden applications against OWASP-class vulnerabilities
 - Find and fix performance problems by measuring first
 - Work with modern AI frameworks and tools (Mastra, LangChain, SmolAgents, genai-tk, TypeSafe/Jev, Clairic, Linkup)
+- Bootstrap agent-first repositories with a harness engineering baseline (AGENTS.md map, docs, security, CI)
 - Post-train and fine-tune LLMs (prime-rl, Unsloth)
 - Deploy and operate applications on cloud platforms (Scalingo)
 - Follow best practices in code generation, refactoring, and UI development
@@ -49,7 +50,7 @@ npx skills add https://github.com/svngoku/coding-agents-skills/tree/main/skills/
 ### Install every skill
 
 ```bash
-# All 23 skills, for one agent
+# All 24 skills, for one agent
 npx skills add svngoku/coding-agents-skills --skill '*' -a claude-code
 
 # All skills, for every agent the CLI can install to, without prompts
@@ -160,6 +161,14 @@ coding-agents-skills/
 │   │       ├── models.md
 │   │       ├── rag.md
 │   │       └── workflows.md
+│   │
+│   ├── harness-repo/                   # Agent-first repo bootstrap (OpenAI harness engineering approach)
+│   │   ├── SKILL.md
+│   │   ├── references/                # 5 guides: AGENTS.md, security, stack tooling, docs, existing repos
+│   │   ├── scripts/
+│   │   │   └── scaffold.sh            # Deterministic, idempotent scaffold
+│   │   ├── assets/                    # Repo templates and per-stack CI workflows
+│   │   └── tests/                     # Offline grader regressions
 │   │
 │   ├── langchain/                      # LangChain framework
 │   │   ├── SKILL.md
@@ -801,6 +810,29 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 
 ---
 
+### 24. Harness Repo
+**Status:** ✅ Complete
+
+**Description:** Bootstrap a new or existing repository for agent-first development, following the approach of OpenAI's harness engineering write-up (extended here with a security baseline and an idempotent scaffold).
+
+**Capabilities:**
+- Deterministic `scaffold.sh` with dry-run, CREATE/SKIP/KEEP policy, `.harness-new` proposals, and opt-in overwrite
+- Short `AGENTS.md` map with a one-line `CLAUDE.md` pointer, plus a seven-file `docs/` knowledge base
+- Versioned exec-plans, design-docs, and product-specs so decisions live in the repository
+- Security baseline: SECURITY policy, CODEOWNERS, Dependabot, pre-commit secret scanning, and PR template
+- Golden-principles linter (GP-1..GP-7) for map size, required docs, Mermaid-only diagrams, secrets, links, and CI hardening
+- Per-stack CI for Node, Python, Go, Ruby, and generic repositories with least-privilege permissions and pinned actions
+- Offline skillgrade harness with reference solution and grader mutation tests
+
+**Use Cases:**
+- Starting a new project that coding agents will work in from the first prompt
+- Making an existing repository agent-ready without overwriting the owner's files
+- Standardising `AGENTS.md`, docs, CI, and security defaults across many repositories
+
+**Reference Files:** 5 guides
+
+---
+
 ## 🚀 Usage
 
 ### For AI Coding Agents
@@ -1048,6 +1080,7 @@ Skills are evaluated with [skillgrade](https://github.com/mgechev/skillgrade#rea
 | linkup-extract | ✅ `eval.yaml` | ready |
 | linkup-workflow | ✅ `eval.yaml` | ready |
 | mastra | ✅ `eval.yaml` | ready |
+| harness-repo | ✅ `eval.yaml` | ready |
 
 ### Running locally (no CI)
 
@@ -1104,6 +1137,7 @@ Contributions are welcome! To add a new skill:
 - [x] Clairic unofficial Python SDK skill
 - [x] Linkup Search, Fetch, Research, Extract, and Workflow skills
 - [x] Mastra AI agent framework skill
+- [x] Harness Repo agent-first bootstrap skill
 - [ ] MCP server authoring skill
 - [ ] RAG patterns skill (retrieval architecture deep dive)
 - [ ] LLM evaluation & observability skill (Langfuse, evals)
@@ -1112,6 +1146,7 @@ Contributions are welcome! To add a new skill:
 
 ## 🔗 Related Projects
 
+- [Harness engineering (OpenAI)](https://openai.com/index/harness-engineering/) - The agent-first approach the Harness Repo skill adapts and extends
 - [Mastra](https://github.com/mastra-ai/mastra) - TypeScript framework for agents, workflows, RAG, evals, and deployment
 - [Hugging Face SmolAgents](https://github.com/huggingface/smolagents) - Minimalist AI agent framework
 - [LangChain](https://github.com/langchain-ai/langchain) - Building applications with LLMs

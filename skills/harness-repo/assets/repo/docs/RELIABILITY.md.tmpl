@@ -1,0 +1,22 @@
+# Reliability
+
+## SLO targets
+*(Placeholder: define once service tiers are known.)*
+
+| Service | SLI | Target |
+|---------|-----|--------|
+
+## Critical paths
+Mark which apply: [ ] authentication  [ ] payments  [ ] data migrations  [ ] other: ___
+
+## Rollback policy
+
+```mermaid
+flowchart LR
+    D["Deploy"] --> H{"Health checks<br/>and error budget OK?"}
+    H -->|yes| M["Monitor"]
+    H -->|no| R["Roll back to previous release"]
+    R --> P["Post-mortem and exec-plan"]
+```
+
+- Every release must be revertible without a data migration; otherwise it needs an exec-plan with a forward-fix strategy.

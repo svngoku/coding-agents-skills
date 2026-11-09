@@ -1,0 +1,20 @@
+# Design — {{PROJECT_NAME}}
+
+## Code conventions
+- Naming, file organisation, and formatting follow the stack's standard tooling (`{{FORMAT}}`).
+- One responsibility per module; respect the layer rules in `ARCHITECTURE.md`.
+- Prefer explicit over clever; no dead code, no commented-out blocks.
+
+## API patterns (backend)
+- Validate every input at the edge; return typed, consistent error shapes.
+- Idempotent writes where retries are possible.
+
+## Component patterns (frontend)
+- Small composable components; state lives as close to use as possible.
+
+## Logging
+- Structured key-value logs (`event=user.login user_id=123 outcome=ok`).
+- Never log secrets, tokens, or personal data (see `SECURITY.md`).
+
+## Diagrams
+Every flow, sequence, schema, or state diagram is a Mermaid block. Never ASCII art.

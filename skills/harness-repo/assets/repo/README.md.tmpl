@@ -1,0 +1,33 @@
+# {{PROJECT_NAME}}
+
+{{DESCRIPTION}}
+
+## Development
+
+```bash
+cp .env.example .env     # then fill in real values (never commit .env)
+{{INSTALL}}
+{{DEV}}                  # run
+{{TEST}}                 # test
+{{CHECK}}                # lint + test gate
+```
+
+## Architecture
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the domain map (Mermaid diagrams) and layer rules.
+
+## Contributing
+1. Read [`AGENTS.md`](AGENTS.md); it maps every decision to its source of truth.
+2. For complex work, write an exec-plan first (`docs/exec-plans/_template.md`).
+3. Run `{{CHECK}}` and `node .opencode/tools/golden_principles.js` before pushing.
+4. Diagrams are Mermaid, never ASCII art.
+
+## Security
+Report vulnerabilities privately; see [`SECURITY.md`](SECURITY.md). Engineering rules: [`docs/SECURITY.md`](docs/SECURITY.md).
+
+## Project docs
+| Doc | Purpose |
+|-----|---------|
+| [ARCHITECTURE](docs/ARCHITECTURE.md) | Layers, trust boundaries, golden principles |
+| [DESIGN](docs/DESIGN.md) | Code conventions |
+| [SECURITY](docs/SECURITY.md) | Security invariants |
+| [PLANS](docs/PLANS.md) | Active exec-plans |

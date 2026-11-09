@@ -58,6 +58,7 @@ SKILL_CATEGORY = {
     "database-design": "Data & Storage",
     "ddd": "Architecture & Design",
     "genai-tk": "AI & Agents",
+    "harness-repo": "AI & Agents",
     "langchain": "AI & Agents",
     "linkup-extract": "AI & Agents",
     "linkup-fetch": "AI & Agents",
