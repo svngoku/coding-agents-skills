@@ -102,7 +102,7 @@ bash "$SKILL_DIR/scripts/scaffold.sh" --name <name> --stack <stack> --desc "<des
 ```
 
 This creates git (`main`), `AGENTS.md` + `CLAUDE.md`, the 7 `docs/` files and subfolders,
-the initial exec-plan and plan template, the **security baseline**, `.opencode/` config and the
+the numbered plan index, the initial exec-plan and an executor-style plan template, the **security baseline**, `.opencode/` config and the
 golden-principles linter, per-stack `ci.yml`, `dependabot.yml`, `.env.example`, `.gitignore`
 (merged), and a `Makefile` for go/generic. Do not hand-write these; if a template is wrong,
 fix the template in `assets/`. Add `--overwrite` only when the user asked for it.
@@ -139,7 +139,7 @@ visible `TODO` over invented detail.
 Run, from the new repo, and fix until all pass:
 
 ```bash
-node .opencode/tools/golden_principles.js   # GP-1..GP-7
+node .opencode/tools/golden_principles.js   # GP-1..GP-7 (python stack: python3 .opencode/tools/golden_principles.py)
 <install command>                           # then
 <check command>                             # lint + typecheck + tests
 ```
@@ -176,7 +176,7 @@ still must do**; and next steps:
 
 All must be true before the handoff:
 
-- [ ] `node .opencode/tools/golden_principles.js` exits 0
+- [ ] The stack's golden-principles linter exits 0 (`.py` for the python stack, `.js` otherwise)
 - [ ] `AGENTS.md` at root, under 150 lines, every command verified; `CLAUDE.md` points to it
 - [ ] All 7 top-level docs exist; Mermaid diagrams only (no ASCII/PlantUML/DOT)
 - [ ] `docs/SECURITY.md` tailored; root `SECURITY.md`, dependabot, pre-commit, PR template present
@@ -213,7 +213,9 @@ If any item fails, fix it before the handoff summary.
 
 ## Maintaining this skill
 
-Change templates in `assets/`, never inline in a session. After editing, validate:
+Change templates in `assets/`, never inline in a session. The two linters (`assets/repo/.opencode/tools/golden_principles.js`
+and `assets/tools/golden_principles.py`) must behave identically; `python3 -m unittest discover -s tests` in this
+directory compares them on every principle. After editing, validate:
 `scripts/scaffold.sh` into a temp dir for each stack, run the generated linter, re-run for
 idempotency, and render every Mermaid block. Action and tool versions in `assets/ci/` and
 `.pre-commit-config.yaml.tmpl` were checked against upstream releases on 2026-11-09; re-check

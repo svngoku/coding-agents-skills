@@ -23,7 +23,7 @@ flowchart LR
     T["AGENTS.md.tmpl"] --> R["scaffold.sh renders placeholders"]
     R --> A["AGENTS.md (generic)"]
     A --> X["Agent tailors: verify commands, add repo facts"]
-    X --> V["golden_principles.js: under 150 lines, links resolve"]
+    X --> V["golden-principles linter: under 150 lines, links resolve"]
     V --> Z["Committed map"]
 ```
 

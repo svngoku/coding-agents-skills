@@ -1,8 +1,22 @@
 # Plans
 
-## Active
-| Plan | Area | Status | Risk |
-|------|------|--------|------|
-| [Initial setup](exec-plans/active/__DATE__-initial-setup.md) | foundation | in_progress | low |
+Exec-plans capture non-trivial work before implementation and keep handoff context afterwards.
+This file is the canonical index. Update a plan's row here whenever its status changes.
 
-Completed plans move to `exec-plans/completed/`. Start new ones from [`exec-plans/_template.md`](exec-plans/_template.md).
+## Active Plans
+
+| Plan | Area | Depends on | Status | Risk |
+|------|------|------------|--------|------|
+| [001: Initial setup](exec-plans/active/__DATE__-initial-setup.md) | foundation | none | in_progress | low |
+
+## Completed Plans
+
+| Plan | Area | Depends on | Status |
+|------|------|------------|--------|
+| _None yet_ | - | - | - |
+
+## Working With Plans
+
+1. Copy [`exec-plans/_template.md`](exec-plans/_template.md) into `exec-plans/active/` as `YYYY-MM-DD-short-name.md`.
+2. Number plans sequentially in the index and record which earlier plans each one depends on.
+3. When a plan is done, move the file to `exec-plans/completed/` and move its row to the table above.

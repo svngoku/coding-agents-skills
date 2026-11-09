@@ -14,7 +14,7 @@ project. Prefer a visible `TODO` over invented detail.
 | `PLANS.md` | Already links the initial plan; add rows as plans are created |
 
 Rules: keep all diagrams Mermaid; keep links relative and resolving (GP-6); do not let any doc
-exceed what an agent will actually read; run `node .opencode/tools/golden_principles.js` after edits.
+exceed what an agent will actually read; run the golden-principles linter (`node .opencode/tools/golden_principles.js`, or `python3 ...golden_principles.py` on the python stack) after edits.
 
 When the user has a first feature in mind, create `docs/exec-plans/active/<date>-<slug>.md`
 from `docs/exec-plans/_template.md` and add it to `PLANS.md`.

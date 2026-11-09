@@ -178,7 +178,8 @@ def ci_hardening(root):
     uses = re.findall(r"uses:\s*([^\s#]+)", workflow)
     if not uses or any("@" not in item for item in uses):
         return False
-    return "golden_principles.js" in workflow and "persist-credentials: false" in workflow
+    linter = re.search(r"golden_principles\.(?:js|py)", workflow) is not None
+    return linter and "persist-credentials: false" in workflow
 
 
 def mermaid_only(root, files):

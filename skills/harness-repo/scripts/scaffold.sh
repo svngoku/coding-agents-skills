@@ -50,6 +50,11 @@ case "$STACK" in
   ruby)    INSTALL="bundle install"; DEV="bin/dev"; BUILD="bundle exec rake build"; TEST="bundle exec rspec"; LINT="bundle exec rubocop"; FORMAT="bundle exec rubocop -A"; CHECK="bundle exec rubocop && bundle exec rspec"; ECO=bundler;;
   generic) INSTALL="make install"; DEV="make dev"; BUILD="make build"; TEST="make test"; LINT="make lint"; FORMAT="make format"; CHECK="make check"; ECO="";;
 esac
+# The python stack gets a Python linter so its CI needs no Node runtime just for the checks.
+case "$STACK" in
+  python) GOLDEN="python3 .opencode/tools/golden_principles.py";;
+  *)      GOLDEN="node .opencode/tools/golden_principles.js";;
+esac
 [ -n "$DESC" ] || DESC="TODO: one-sentence product purpose."
 TODAY="$(date +%Y-%m-%d)"
 
@@ -60,6 +65,7 @@ render() { # stdin -> stdout
       -e "s|{{DEV}}|$(esc "$DEV")|g" -e "s|{{BUILD}}|$(esc "$BUILD")|g" \
       -e "s|{{TEST}}|$(esc "$TEST")|g" -e "s|{{LINT}}|$(esc "$LINT")|g" \
       -e "s|{{FORMAT}}|$(esc "$FORMAT")|g" -e "s|{{CHECK}}|$(esc "$CHECK")|g" \
+      -e "s|{{GOLDEN}}|$(esc "$GOLDEN")|g" \
       -e "s|__DATE__|$TODAY|g"
 }
 
@@ -92,10 +98,24 @@ fi
 # --- 2. mirror assets/repo/** (strip .tmpl, render) -------------------------
 while IFS= read -r f; do
   rel="${f#"$ASSETS/repo/"}"; rel="${rel%.tmpl}"; rel="${rel//__DATE__/$TODAY}"
+  [ "$STACK" = python ] && [ "$rel" = ".opencode/tools/golden_principles.js" ] && continue
+  # A repo that already did its initial setup (even under another date) must not get a second plan.
+  case "$rel" in
+    docs/exec-plans/active/*-initial-setup.md)
+      if compgen -G "$TARGET/docs/exec-plans/*/*initial-setup*.md" >/dev/null; then
+        [ -e "$TARGET/$rel" ] || continue
+      fi;;
+  esac
   render < "$f" > "$WORK/r"
   mode=""; [ -x "$f" ] && mode="755"
   place "$WORK/r" "$rel" "$mode"
 done < <(find "$ASSETS/repo" -type f | LC_ALL=C sort)
+
+# --- 2b. python linter (python stack only) ----------------------------------
+if [ "$STACK" = python ]; then
+  render < "$ASSETS/tools/golden_principles.py" > "$WORK/r"
+  place "$WORK/r" ".opencode/tools/golden_principles.py" 755
+fi
 
 # --- 3. stack-specific CI ---------------------------------------------------
 render < "$ASSETS/ci/ci.$STACK.yml" > "$WORK/r"; place "$WORK/r" ".github/workflows/ci.yml"

@@ -3,15 +3,40 @@ title: "{Plan title}"
 area: "{domain / layer}"
 status: draft            # draft | in_progress | blocked | completed
 risk: low                # low | medium | high
+depends_on: none         # plan numbers this plan builds on, or none
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 author: agent
 ---
 
-# Plan: {title}
+# Plan NNN: {title}
+
+> **Executor instructions** (delete for small plans): follow the steps in order. Run every
+> verification command and confirm the expected result before moving on. If a STOP condition
+> occurs, stop and report; do not improvise. Keep the index in `docs/PLANS.md` current.
+>
+> **Drift check (run first)**: `git diff --stat <planned-at-sha>..HEAD -- <in-scope paths>`.
+> Drift in the in-scope files needs review before implementation.
 
 ## Intent
-One paragraph: what and why.
+One paragraph: what and why. Name the failure or need, not the solution.
+
+## Current State
+Verified facts an executor needs, each with a file path or command that proves it. Mark anything
+unverified as an assumption.
+
+## Commands You Will Need
+| Purpose | Command | Expected |
+|---------|---------|----------|
+| Full gate | `{{CHECK}}` | exit 0 |
+| Repo invariants | `{{GOLDEN}}` | `golden principles: all clear` |
+
+## Scope
+**In scope** (the only files this plan may change):
+-
+
+**Out of scope**:
+-
 
 ## Acceptance Criteria
 - [ ] Observable, testable outcome
@@ -34,15 +59,18 @@ sequenceDiagram
     S-->>U: response
 ```
 
-## Security impact
+## STOP Conditions
+Stop and ask a human when:
+- A verification command fails twice for the same unexplained reason.
+- The change needs a file outside the in-scope list, or a new dependency.
+- Root-cause confidence is under 60%.
+
+## Security Impact
 - [ ] Touches auth / PII / payments / secrets / CI? If yes: human review required, see `docs/SECURITY.md` section 8.
 
 ## Risks & Rollback
 | Risk | Likelihood | Mitigation / rollback |
 |------|-----------|-----------------------|
-
-## Non-Goals
--
 
 ## Progress Log
 | Date | Update |

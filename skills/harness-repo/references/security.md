@@ -28,7 +28,7 @@ flowchart LR
 | `.github/pull_request_template.md` | Security checklist on every PR |
 | `.pre-commit-config.yaml` | `gitleaks` + golden-principles hook |
 | `.gitignore` / `.env.example` | `.env*` ignored except the placeholder example |
-| `golden_principles.js` | GP-4 (secret patterns, `.env` ignored) and GP-7 (workflow hardening) |
+| `golden_principles.js` / `.py` | GP-4 (secret patterns, `.env` ignored) and GP-7 (workflow hardening) |
 
 ## Post-bootstrap checklist (needs a human / repo admin)
 

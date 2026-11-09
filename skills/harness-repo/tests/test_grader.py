@@ -99,6 +99,13 @@ class GraderTests(unittest.TestCase):
         self.edit(path, lambda text: text.replace("actions/checkout@v7", "actions/checkout@main", 1))
         self.assert_group_failed("hardened-ci")
 
+    def test_ci_must_run_the_golden_principles_linter(self):
+        self.edit(
+            ".github/workflows/ci.yml",
+            lambda text: text.replace("golden_principles.py", "other_check.py"),
+        )
+        self.assert_group_failed("hardened-ci")
+
     def test_ascii_diagram_fails(self):
         self.edit("docs/ARCHITECTURE.md", lambda text: text + "\n+----+\n| A  |\n+----+\n")
         self.assert_group_failed("mermaid-only-diagrams")

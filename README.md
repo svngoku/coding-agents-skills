@@ -167,8 +167,8 @@ coding-agents-skills/
 │   │   ├── references/                # 5 guides: AGENTS.md, security, stack tooling, docs, existing repos
 │   │   ├── scripts/
 │   │   │   └── scaffold.sh            # Deterministic, idempotent scaffold
-│   │   ├── assets/                    # Repo templates and per-stack CI workflows
-│   │   └── tests/                     # Offline grader regressions
+│   │   ├── assets/                    # Repo templates, Node and Python linters, per-stack CI workflows
+│   │   └── tests/                     # Grader regressions, scaffold and linter-parity tests
 │   │
 │   ├── langchain/                      # LangChain framework
 │   │   ├── SKILL.md
@@ -820,7 +820,9 @@ Every skill also ships a skillgrade evaluation harness alongside its `SKILL.md`:
 - Short `AGENTS.md` map with a one-line `CLAUDE.md` pointer, plus a seven-file `docs/` knowledge base
 - Versioned exec-plans, design-docs, and product-specs so decisions live in the repository
 - Security baseline: SECURITY policy, CODEOWNERS, Dependabot, pre-commit secret scanning, and PR template
-- Golden-principles linter (GP-1..GP-7) for map size, required docs, Mermaid-only diagrams, secrets, links, and CI hardening
+- Golden-principles linter (GP-1..GP-7) for map size, required docs, Mermaid-only diagrams, secrets, links, and CI hardening, in Node and a behaviour-identical Python version for Python repos
+- Executor-style exec-plan template (drift check, commands table, scope, STOP conditions) and a numbered plan index with completed history and dependencies
+- Migration guidance for repos that already have a harness (ASCII to Mermaid, missing plan folders, existing linters)
 - Per-stack CI for Node, Python, Go, Ruby, and generic repositories with least-privilege permissions and pinned actions
 - Offline skillgrade harness with reference solution and grader mutation tests
 
